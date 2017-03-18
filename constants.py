@@ -1,5 +1,5 @@
 index = "CC-MAIN-2015-27-index"
-forbidden_url_words = [
+forbidden_search_words = [
     "http",
     "https",
     ".com",
