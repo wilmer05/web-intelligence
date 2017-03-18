@@ -8,3 +8,4 @@ forbidden_search_words = [
     "/"
 ]
 max_download = 10
+max_depth = 10
