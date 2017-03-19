@@ -1,9 +1,11 @@
 import constants
 import sys
 
-def get_filtered_lines(data):
+def get_filtered_lines(in_file, out_file):
+    f1 = open(in_file)
+    data = f1.read()
     ff = []
-    f = open(sys.argv[2], "w")
+    f = open(out_file, "w")
     for line in data.splitlines():
         sl = line.split("\t")
         valid = True
@@ -16,10 +18,9 @@ def get_filtered_lines(data):
             f.write(sl[1] + "   ->   " + sl[4] + "\n")
             ff.append(sl[4])
     f.close()
+    f1.close()
     return ff
     
 
 if __name__ == "__main__":
-    f = open(sys.argv[1])
-    get_filtered_lines(f.read())
-    f.close()
+    print get_filtered_lines(sys.argv[1], sys.argv[2])

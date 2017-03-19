@@ -7,6 +7,7 @@ from BeautifulSoup import BeautifulSoup, SoupStrainer
 import urllib
 import os
 from HTMLParser import HTMLParser
+import sys 
 
 class MyHTMLParser(HTMLParser):
     def __init__(self, q):
@@ -50,6 +51,8 @@ def bfs(initial_nodes):
     q = util.Queue()
     for url in initial_nodes:
         q.enqueue((url,0))
+    print "Starting BFS..."
+    sys.stdout.flush()
     download_cnt = 0
     while q.size() > 0 and download_cnt < constants.max_download:    
        (url, depth) = q.dequeue()
