@@ -19,12 +19,12 @@ def download_page(url):
     pages = [json.loads(x) for x in resp.content.strip().split('\n')]
     page = pages[0]
 
-    offset, length = int(page['offset']), int(page['length'])
-    offset_end = offset + length - 1
-    prefix = 'https://commoncrawl.s3.amazonaws.com/'
-    # We can then use the Range header to ask for just this set of bytes
     if "error" in page:
         return 0
+
+    prefix = 'https://commoncrawl.s3.amazonaws.com/'
+    offset, length = int(page['offset']), int(page['length'])
+    offset_end = offset + length - 1
     resp = requests.get(prefix + page['filename'], headers={'Range': 'bytes={}-{}'.format(offset, offset_end)})
 
     raw_data = StringIO(resp.content)
@@ -32,6 +32,7 @@ def download_page(url):
 
     data = f.read()
     file_name = page["url"]
+    file_name = file_name.split("//")[1]
     file_name = file_name.replace(":", "-")
     file_name = file_name.replace("/", "_")
     file_name = "pages/" + file_name + ".txt"

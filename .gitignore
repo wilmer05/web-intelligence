@@ -1,3 +1,6 @@
 *.pyc
 pages/
 *.swp
+logs/
+filtered_logs/
+graph/
