@@ -54,6 +54,7 @@ def bfs(initial_nodes):
     print "Starting BFS..."
     #sys.stdout.flush()
     download_cnt = 0
+    failed = 0
     while q.size() > 0 and download_cnt < constants.max_download:    
        (url, depth) = q.dequeue()
        if depth > constants.max_depth:
@@ -66,9 +67,10 @@ def bfs(initial_nodes):
                     if not file_exist(next_url):
                         q.enqueue((next_url, depth + 1))
             except:
-                continue
+              failed += 1  
        
     print "Downloaded %s documents." % download_cnt
+    print "%s documents with erros." % failed
 
 if __name__ == "__main__":
     urls = ["https://www.yahoo.com/"] 
