@@ -26,6 +26,8 @@ status, response = http.request('http://www.nytimes.com')
 
 def get_links_from_file(url):
     file_name = convert_url(url)
+    if file_name is None:
+        return []
     f = open(file_name)
     data = f.read()
     next_urls = []
@@ -35,7 +37,10 @@ def get_links_from_file(url):
     return html.urls
 
 def convert_url(file_name):
+    tmp = file_name.split("//")[0]
     file_name = file_name.split("//")[1]
+    if file_name is None or len(file_name) == 0:
+        return None
     if file_name[-1] != "/":
         file_name += "/"
     file_name = file_name.replace(":", "-")
@@ -44,13 +49,15 @@ def convert_url(file_name):
     return file_name
 
 def file_exist(url):
+    if len(url) ==0:
+        return False
     file_name = convert_url(url)
-    return os.path.isfile(file_name)
+    return (file_name is not None) and os.path.isfile(file_name)
 
 def bfs(initial_nodes):
     q = util.Queue()
     for url in initial_nodes:
-        if not file_exist(url)
+        if not file_exist(url):
             q.enqueue((url,0))
     print "Starting BFS..."
     #sys.stdout.flush()
