@@ -13,7 +13,7 @@ def get_filtered_lines(in_file, out_file):
             if invalid_filter in sl[1]:
                 valid = False
                 break
-
+        valid = valid and "http" in sl[4]
         if valid:
             f.write(sl[1] + "   ->   " + sl[4] + "\n")
             ff.append(sl[4])

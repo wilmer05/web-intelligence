@@ -52,17 +52,20 @@ def bfs(initial_nodes):
     for url in initial_nodes:
         q.enqueue((url,0))
     print "Starting BFS..."
-    sys.stdout.flush()
+    #sys.stdout.flush()
     download_cnt = 0
     while q.size() > 0 and download_cnt < constants.max_download:    
        (url, depth) = q.dequeue()
-       print url
        if depth > constants.max_depth:
             break
        if not file_exist(url) and download_page(url) > 0:
             download_cnt += 1 
-            for next_url in get_links_from_file(url):
-                q.enqueue((next_url, depth + 1))
+            try:
+                links = get_links_from_file(url)
+                for next_url in links:
+                    q.enqueue((next_url, depth + 1))
+            except:
+                continue
        
     print "Downloaded %s documents." % download_cnt
 

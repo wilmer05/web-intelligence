@@ -15,6 +15,8 @@ def build_url(url):
    return "http://index.commoncrawl.org/" + constants.index + "?url=" + url + "&output=json"
 
 def download_page(url):
+    if url[-1] != "/":
+        url += "/"
     resp = requests.get(build_url(url))
     pages = [json.loads(x) for x in resp.content.strip().split('\n')]
     page = pages[0]
@@ -31,7 +33,7 @@ def download_page(url):
     f = gzip.GzipFile(fileobj=raw_data)
 
     data = f.read()
-    file_name = page["url"]
+    file_name = url
     file_name = file_name.split("//")[1]
     file_name = file_name.replace(":", "-")
     file_name = file_name.replace("/", "_")

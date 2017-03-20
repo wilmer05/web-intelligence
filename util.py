@@ -1,15 +1,16 @@
+from collections import deque
 class Queue:
     def __init__(self):
-        self.items = []
+        self.items = deque([])
 
     def isEmpty(self):
-        return self.items == []
+        return self.size() == 0
 
     def enqueue(self, item):
-        self.items.insert(0,item)
+        self.items.append(item)
 
     def dequeue(self):
-        return self.items.pop()
+        return self.items.popleft()
 
     def size(self):
         return len(self.items)
