@@ -50,7 +50,8 @@ def file_exist(url):
 def bfs(initial_nodes):
     q = util.Queue()
     for url in initial_nodes:
-        q.enqueue((url,0))
+        if not file_exist(url)
+            q.enqueue((url,0))
     print "Starting BFS..."
     #sys.stdout.flush()
     download_cnt = 0
