@@ -7,6 +7,6 @@ forbidden_search_words = [
     ".us",
     "/"
 ]
-max_download = 10
-max_depth = 10
+max_download = 1000000
+max_depth = 1000000
 log_name = "user-ct-test-collection-0"

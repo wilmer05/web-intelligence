@@ -8,6 +8,8 @@ def get_filtered_lines(in_file, out_file):
     f = open(out_file, "w")
     for line in data.splitlines():
         sl = line.split("\t")
+        if len(sl) < 5:
+            continue
         valid = True
         for invalid_filter in constants.forbidden_search_words:
             if invalid_filter in sl[1]:

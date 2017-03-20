@@ -63,7 +63,8 @@ def bfs(initial_nodes):
             try:
                 links = get_links_from_file(url)
                 for next_url in links:
-                    q.enqueue((next_url, depth + 1))
+                    if not file_exist(next_url):
+                        q.enqueue((next_url, depth + 1))
             except:
                 continue
        
