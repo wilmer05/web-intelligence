@@ -7,18 +7,28 @@ import constants
 import bfs
 import log_filter
 import sys
+import last_queue
 try:
     from cStringIO import StringIO
 except:
     from StringIO import StringIO
 
 if __name__ == "__main__":
-    f = open("out", "a")
-    for x in range(int(sys.argv[1]), 10):
+    first_file = sys.argv[1]
+    q = None
+    try:
+        first_file = last_queue.last_id
+        q = last_queue.q
+    except:
+        print "No problems."
+    for x in range(first_file, 10):
+        f = open("out", "a")
         file_name = "logs/" + constants.log_name + str(x) + ".txt"
         out_file = "graph/" + constants.log_name + str(x) + ".txt"
         urls = log_filter.get_filtered_lines(file_name, out_file)
         #print "Urls ready..."
-        bfs.bfs(urls[1:])
+        bfs.bfs(urls[1:],q, x)
         f.write("Ready %s.\n" % str(x))
+        f.close()
+        q = None
 

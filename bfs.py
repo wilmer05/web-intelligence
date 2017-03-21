@@ -54,12 +54,15 @@ def file_exist(url):
     file_name = convert_url(url)
     return (file_name is not None) and os.path.isfile(file_name)
 
-def bfs(initial_nodes):
+def bfs(initial_nodes, last_queue, file_id):
     q = util.Queue()
-    for url in initial_nodes:
-        if not file_exist(url):
-            q.enqueue((url,0))
-    print "Starting BFS..."
+    if last_queue is not None:
+        q = last_queue
+    else:
+        for url in initial_nodes:
+            if not file_exist(url):
+                q.enqueue((url,0))
+    print "Starting BFS for file %s..." % str(file_id)
     #sys.stdout.flush()
     download_cnt = 0
     failed = 0
@@ -67,16 +70,25 @@ def bfs(initial_nodes):
        (url, depth) = q.dequeue()
        if depth > constants.max_depth:
             break
-       if download_page(url) > 0:
+       try:
+            if download_page(url) > 0:
        #if not file_exist(url) and download_page(url) > 0:
-            download_cnt += 1 
-            try:
-                links = get_links_from_file(url)
-                for next_url in links:
-                    #if not file_exist(next_url):
-                    q.enqueue((next_url, depth + 1))
-            except:
-              failed += 1  
+                download_cnt += 1 
+                try:
+                    links = get_links_from_file(url)
+                    for next_url in links:
+                        #if not file_exist(next_url):
+                        q.enqueue((next_url, depth + 1))
+                except:
+                    failed += 1  
+       except:
+            print "Connection timeout."
+            f = open("last_queue.py", "w")
+            f.write("from collections import deque\n")
+            f.write("q = %s" % str(q.items))
+            f.write("last_id = %s" % str(file_id))
+            f.close()
+            break
        
     print "Downloaded %s documents." % download_cnt
     print "%s documents with erros." % failed
