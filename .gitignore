@@ -1,4 +1,5 @@
 *.pyc
+last_queue.py
 pages/
 *.swp
 logs/
