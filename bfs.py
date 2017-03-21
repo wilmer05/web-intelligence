@@ -57,7 +57,8 @@ def file_exist(url):
 def bfs(initial_nodes, last_queue, file_id):
     q = util.Queue()
     if last_queue is not None:
-        q = last_queue
+        print "aca"
+        q.items = last_queue
     else:
         for url in initial_nodes:
             if not file_exist(url):
