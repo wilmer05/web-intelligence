@@ -57,7 +57,7 @@ def file_exist(url):
 def bfs(initial_nodes, last_queue, file_id):
     q = util.Queue()
     if last_queue is not None:
-        print "aca"
+        print "Using last queue for %s" % str(file_id)
         q.items = last_queue
     else:
         for url in initial_nodes:
@@ -84,10 +84,10 @@ def bfs(initial_nodes, last_queue, file_id):
                     failed += 1  
        except:
             print "Connection timeout."
-            f = open("last_queue.py", "w")
+            f = open("last_queue_%s.py" % str(file_id), "w")
             f.write("from collections import deque\n")
-            f.write("q = %s" % str(q.items))
-            f.write("last_id = %s" % str(file_id))
+            f.write("q = %s\n" % str(q.items))
+            f.write("last_id = %s\n" % str(file_id))
             f.close()
             break
        
