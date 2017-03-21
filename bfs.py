@@ -66,22 +66,26 @@ def bfs(initial_nodes, last_queue, file_id):
     print "Starting BFS for file %s..." % str(file_id)
     #sys.stdout.flush()
     download_cnt = 0
+    existing_url = 0
     failed = 0
     while q.size() > 0 and download_cnt < constants.max_download:    
        (url, depth) = q.dequeue()
        if depth > constants.max_depth:
             break
        try:
+            exist = file_exist(url):
             if download_page(url) > 0:
        #if not file_exist(url) and download_page(url) > 0:
-                download_cnt += 1 
                 try:
                     links = get_links_from_file(url)
                     for next_url in links:
                         #if not file_exist(next_url):
                         q.enqueue((next_url, depth + 1))
+                    if not exist:
+                        download_cnt += 1 
                 except:
                     failed += 1  
+            
        except:
             print "Connection timeout."
             f = open("last_queue_%s.py" % str(file_id), "w")
