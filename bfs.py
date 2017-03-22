@@ -61,8 +61,7 @@ def bfs(initial_nodes, last_queue, file_id, graph_file):
         q.items = last_queue
     else:
         for url in initial_nodes:
-            if not file_exist(url):
-                q.enqueue((url,0))
+            q.enqueue((url,0))
     print "Starting BFS for file %s..." % str(file_id)
     #sys.stdout.flush()
     download_cnt = 0
@@ -88,8 +87,7 @@ def bfs(initial_nodes, last_queue, file_id, graph_file):
                     if not exist:
                         download_cnt += 1 
                 except:
-                    failed += 1  
-            
+                    failed += 1 
        except:
             timeout_cnt += 1
             print "Connection timeout."

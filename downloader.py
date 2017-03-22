@@ -3,6 +3,7 @@ import json
 import requests
 import constants
 import os.path
+import os
 try:
     from cStringIO import StringIO
 except:
@@ -17,6 +18,15 @@ def build_url(url):
 def download_page(url):
     if url[-1] != "/":
         url += "/"
+    file_name = url
+    file_name = file_name.split("//")[1]
+    if len(file_name) > 0 and file_name[-1] != "/":
+        file_name += "/"
+    file_name = file_name.replace(":", "-")
+    file_name = file_name.replace("/", "_")
+    file_name = "pages/" + file_name + ".txt"
+    if os.path.isfile(file_name):
+        return 1
     resp = requests.get(build_url(url))
     pages = [json.loads(x) for x in resp.content.strip().split('\n')]
     page = pages[0]
@@ -33,13 +43,6 @@ def download_page(url):
     f = gzip.GzipFile(fileobj=raw_data)
 
     data = f.read()
-    file_name = url
-    file_name = file_name.split("//")[1]
-    if len(file_name) > 0 and file_name[-1] != "/":
-        file_name += "/"
-    file_name = file_name.replace(":", "-")
-    file_name = file_name.replace("/", "_")
-    file_name = "pages/" + file_name + ".txt"
 
     f2 = open(file_name, "w")
     f2.write(data)

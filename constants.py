@@ -8,6 +8,6 @@ forbidden_search_words = [
     "/"
 ]
 max_download = 1000000
-max_depth = 5
+max_depth = 1
 log_name = "user-ct-test-collection-0"
 max_timeout = 20
