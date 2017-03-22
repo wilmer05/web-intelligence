@@ -1,11 +1,12 @@
 import constants
 import sys
 
-def get_filtered_lines(in_file, out_file):
+def get_filtered_lines(in_file, out_file, print_graph = True):
     f1 = open(in_file)
     data = f1.read()
     ff = []
-    f = open(out_file, "w")
+    if print_graph:
+        f = open(out_file, "w")
     for line in data.splitlines():
         sl = line.split("\t")
         if len(sl) < 5:
@@ -17,9 +18,11 @@ def get_filtered_lines(in_file, out_file):
                 break
         valid = valid and "http" in sl[4]
         if valid:
-            f.write(sl[1] + "   ->   " + sl[4] + "\n")
+            if print_graph:
+                f.write(sl[1] + "   ->   " + sl[4] + "\n")
             ff.append(sl[4])
-    f.close()
+    if print_graph:
+        f.close()
     f1.close()
     return ff
     

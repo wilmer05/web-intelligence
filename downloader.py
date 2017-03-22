@@ -35,6 +35,8 @@ def download_page(url):
     data = f.read()
     file_name = url
     file_name = file_name.split("//")[1]
+    if len(file_name) > 0 and file_name[-1] != "/":
+        file_name += "/"
     file_name = file_name.replace(":", "-")
     file_name = file_name.replace("/", "_")
     file_name = "pages/" + file_name + ".txt"

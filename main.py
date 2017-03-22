@@ -28,7 +28,7 @@ if __name__ == "__main__":
         out_file = "graph/" + constants.log_name + str(x) + ".txt"
         urls = log_filter.get_filtered_lines(file_name, out_file)
         #print "Urls ready..."
-        bfs.bfs(list(set(urls[1:])),q, x)
+        bfs.bfs(list(set(urls[1:])),q, x, out_file)
         f.write("Ready %s.\n" % str(x))
         f.close()
         q = None

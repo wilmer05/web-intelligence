@@ -54,7 +54,7 @@ def file_exist(url):
     file_name = convert_url(url)
     return (file_name is not None) and os.path.isfile(file_name)
 
-def bfs(initial_nodes, last_queue, file_id):
+def bfs(initial_nodes, last_queue, file_id, graph_file):
     q = util.Queue()
     if last_queue is not None:
         print "Using last queue for %s" % str(file_id)
@@ -68,18 +68,22 @@ def bfs(initial_nodes, last_queue, file_id):
     download_cnt = 0
     existing_url = 0
     failed = 0
+    timeout_cnt = 0
     while q.size() > 0 and download_cnt < constants.max_download:    
        (url, depth) = q.dequeue()
        if depth > constants.max_depth:
             break
        try:
-            exist = file_exist(url):
+            exist = file_exist(url)
             if download_page(url) > 0:
        #if not file_exist(url) and download_page(url) > 0:
                 try:
                     links = get_links_from_file(url)
                     for next_url in links:
                         #if not file_exist(next_url):
+                        f = open(graph_file, "a")
+                        f.write(url + "   ->   " + next_url + "\n")
+                        f.close()
                         q.enqueue((next_url, depth + 1))
                     if not exist:
                         download_cnt += 1 
@@ -87,13 +91,15 @@ def bfs(initial_nodes, last_queue, file_id):
                     failed += 1  
             
        except:
+            timeout_cnt += 1
             print "Connection timeout."
-            f = open("last_queue_%s.py" % str(file_id), "w")
-            f.write("from collections import deque\n")
-            f.write("q = %s\n" % str(q.items))
-            f.write("last_id = %s\n" % str(file_id))
-            f.close()
-            break
+            if timeout_cnt > constants.max_timeout:
+                f = open("last_queue_%s.py" % str(file_id), "w")
+                f.write("from collections import deque\n")
+                f.write("q = %s\n" % str(q.items))
+                f.write("last_id = %s\n" % str(file_id))
+                f.close()
+                break
        
     print "Downloaded %s documents." % download_cnt
     print "%s documents with erros." % failed
