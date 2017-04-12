@@ -22,13 +22,28 @@ if __name__ == "__main__":
         q = last_queue.q
     except:
         print "No problems."
+	
     for x in range(int(first_file), int(last_file)):
         f = open("out", "a")
-        file_name = "logs/" + constants.log_name + str(x) + ".txt"
+	try:
+    		if len(sys.argv) >=4:
+			ff = open("timeouts/" + str(x) + ".txt")
+			lines = [line.rstrip('\n') for line in ff]
+			ff.close()
+			q = util.Queue()
+			for line in lines:
+				q.enqueue((line,1))				
+			print "Readed timeouts queue."	
+			
+	except:
+		print "Exception reading timeouts queue"
+        file_name = "logs/" + constants.log_name + str(x) + ".txt.gz"
         out_file = "graph/" + constants.log_name + str(x) + ".txt"
         urls = log_filter.get_filtered_lines(file_name, out_file)
         #print "Urls ready..."
-        bfs.bfs(list(set(urls[1:])),q, x, out_file)
+	urls = list(set(urls[1:]))
+	urls.reverse()
+        bfs.bfs(urls, q, x, out_file)
         f.write("Ready %s.\n" % str(x))
         f.close()
         q = None

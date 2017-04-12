@@ -1,8 +1,9 @@
 import constants
 import sys
+import gzip
 
 def get_filtered_lines(in_file, out_file, print_graph = True):
-    f1 = open(in_file)
+    f1 = gzip.open(in_file)
     data = f1.read()
     ff = []
     if print_graph:
