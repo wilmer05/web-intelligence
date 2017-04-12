@@ -75,7 +75,11 @@ def bfs(initial_nodes, last_queue, file_id, graph_file):
             break
        try:
             exist = file_exist(url)
-            if download_page(url) > 0:
+
+            #if download_page(url) > 0 or download_page(url, False) > 0:
+            #if download_page(url) > 0: 
+            if download_page(url, False) > 0:
+                sys.stdout.flush()
                 try:
                     links = get_links_from_file(url)
                     for next_url in links:
