@@ -78,6 +78,7 @@ def bfs(initial_nodes, last_queue, file_id, graph_file):
 
             #if download_page(url) > 0 or download_page(url, False) > 0:
             #if download_page(url) > 0: 
+            print "Descargando: %s" % url
             if download_page(url, False) > 0:
                 sys.stdout.flush()
                 try:
