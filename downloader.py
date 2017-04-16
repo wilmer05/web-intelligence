@@ -11,7 +11,7 @@ except:
 import requests
 from bs4 import BeautifulSoup as bs
 import urllib2
-
+import converter
 # Let's fetch the Common Crawl FAQ using the CC index
 def build_url(url):
    url = url.replace("/", "%2F")
@@ -19,28 +19,27 @@ def build_url(url):
    return "http://index.commoncrawl.org/" + constants.index + "?url=" + url + "&output=json"
 
 def download_page(url, use_common_crawl=True):
-    if use_common_crawl:
-        return download_from_cc(url)
-    else: 
+    try:
+        cnt =  download_from_cc(url)
+        if cnt == 0:
+            return direct_download(url)
+        return cnt
+    except:
         return direct_download(url)
 
 def direct_download(url):
-    if url[-1] != "/":
-        url += "/"
-    file_name = url
-    file_name = file_name.split("//")[1]
-    if len(file_name) > 0 and file_name[-1] != "/":
-        file_name += "/"
-    file_name = file_name.replace(":", "-")
-    file_name = file_name.replace("/", "_")
-    file_name = "pages/" + file_name + ".txt"
+    dir_name, file_name = converter.convert_url(url)
+    if file_name is None:
+        return 0
+
     if os.path.isfile(file_name):
         return 1
-
     try:
-        r = requests.get(url)
+        r = requests.get(url, timeout=constants.REQUEST_TIMEOUT)
     except:
-        print "Error descargando directo: %s" % url    
+        print "Error descargando directo: %s" % url   
+        return 0
+
     f2 = open(file_name, "w")
     f2.write(r.text.encode('ascii', 'ignore'))
 
@@ -48,15 +47,8 @@ def direct_download(url):
     return len(r.text.encode('ascii', 'ignore'))
 
 def download_from_cc(url):
-    if url[-1] != "/":
-        url += "/"
-    file_name = url
-    file_name = file_name.split("//")[1]
-    if len(file_name) > 0 and file_name[-1] != "/":
-        file_name += "/"
-    file_name = file_name.replace(":", "-")
-    file_name = file_name.replace("/", "_")
-    file_name = "pages/" + file_name + ".txt"
+    dir_name, file_name = converter.convert_url(url)
+
     if os.path.isfile(file_name):
         return 1
     resp = requests.get(build_url(url))
@@ -69,7 +61,7 @@ def download_from_cc(url):
     prefix = 'https://commoncrawl.s3.amazonaws.com/'
     offset, length = int(page['offset']), int(page['length'])
     offset_end = offset + length - 1
-    resp = requests.get(prefix + page['filename'], headers={'Range': 'bytes={}-{}'.format(offset, offset_end)})
+    resp = requests.get(prefix + page['filename'], headers={'Range': 'bytes={}-{}'.format(offset, offset_end)}, timeout=constants.REQUEST_TIMEOUT)
 
     raw_data = StringIO(resp.content)
     f = gzip.GzipFile(fileobj=raw_data)

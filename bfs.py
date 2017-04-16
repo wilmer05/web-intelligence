@@ -8,6 +8,7 @@ import urllib
 import os
 from HTMLParser import HTMLParser
 import sys 
+import converter
 
 class MyHTMLParser(HTMLParser):
     def __init__(self, q):
@@ -25,7 +26,7 @@ class MyHTMLParser(HTMLParser):
 #status, response = http.request('http://www.nytimes.com')
 
 def get_links_from_file(url):
-    file_name = convert_url(url)
+    dir_name, file_name = convert_url(url)
     if file_name is None:
         return []
     f = open(file_name)
@@ -37,21 +38,12 @@ def get_links_from_file(url):
     return html.urls
 
 def convert_url(file_name):
-    tmp = file_name.split("//")[0]
-    file_name = file_name.split("//")[1]
-    if file_name is None or len(file_name) == 0:
-        return None
-    if file_name[-1] != "/":
-        file_name += "/"
-    file_name = file_name.replace(":", "-")
-    file_name = file_name.replace("/", "_")
-    file_name = "pages/" + file_name + ".txt"
-    return file_name
+    return converter.convert_url(file_name)
 
 def file_exist(url):
     if len(url) ==0:
         return False
-    file_name = convert_url(url)
+    dir_name, file_name = convert_url(url)
     return (file_name is not None) and os.path.isfile(file_name)
 
 def bfs(initial_nodes, last_queue, file_id, graph_file):
