@@ -1,3 +1,4 @@
+.nfs000000000055675200000002
 *.pyc
 pages/
 *.swp
@@ -8,3 +9,4 @@ out
 last_queue*
 timeouts/
 descargas/
+pages2/

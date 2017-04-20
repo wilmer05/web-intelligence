@@ -35,7 +35,7 @@ def direct_download(url):
     if os.path.isfile(file_name):
         return 1
     try:
-        r = requests.get(url, timeout=constants.REQUEST_TIMEOUT)
+        r = requests.get(url, timeout=constants.REQUEST_TIMEOUT, allow_redirects=False)
     except:
         print "Error descargando directo: %s" % url   
         return 0
@@ -51,7 +51,10 @@ def download_from_cc(url):
 
     if os.path.isfile(file_name):
         return 1
-    resp = requests.get(build_url(url))
+    try:
+        resp = requests.get(build_url(url), timeout=constants.REQUEST_TIMEOUT, allow_redirects=False)
+    except:
+        return 0
     pages = [json.loads(x) for x in resp.content.strip().split('\n')]
     page = pages[0]
 
@@ -61,7 +64,7 @@ def download_from_cc(url):
     prefix = 'https://commoncrawl.s3.amazonaws.com/'
     offset, length = int(page['offset']), int(page['length'])
     offset_end = offset + length - 1
-    resp = requests.get(prefix + page['filename'], headers={'Range': 'bytes={}-{}'.format(offset, offset_end)}, timeout=constants.REQUEST_TIMEOUT)
+    resp = requests.get(prefix + page['filename'], headers={'Range': 'bytes={}-{}'.format(offset, offset_end)}, timeout=constants.REQUEST_TIMEOUT, allow_redirects=False)
 
     raw_data = StringIO(resp.content)
     f = gzip.GzipFile(fileobj=raw_data)
