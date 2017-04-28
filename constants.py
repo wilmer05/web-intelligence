@@ -7,8 +7,8 @@ forbidden_search_words = [
     ".us",
     "/"
 ]
-max_download = 1000000
-max_depth = 2
+max_download = 10000
+max_depth = 1
 log_name = "user-ct-test-collection-0"
 max_timeout = 2000000
 HASH_SIZE = 1000
