@@ -16,4 +16,6 @@ HASH_SIZE = 1000
 REQUEST_TIMEOUT = 3
 CORPUS_FILE = 'corpus.mm'
 DOC_THRESHOLD = 0.005
+ALL_FILES = 'all_files.txt'
 MODEL_FILE = 'my_model'
+PREFIX = 'w'

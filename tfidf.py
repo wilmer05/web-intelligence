@@ -7,7 +7,8 @@ import os
 from log_filter import get_queries
 import geom
 import matplotlib.pyplot as plt
-
+import MyCorpus
+import DocIter
 def keys_in_word(keys, word):
     for i in keys:
         if i in word:
@@ -19,31 +20,43 @@ def get_dict_from_docs(documents, queries):
     blacklist = set('css $( < > { } foter _ - class= bgcolor'.split())
     print "Processing texts"
     cnt = 0
+    cnt2 = 0
     texts = []
     all_q = set()
     for q in queries:
         for w in q:
             all_q.add(w)
-    for document in documents:
-        text = []
+    mc = MyCorpus.MyCorpus()
+    #frequency = defaultdict(int)
+    for document in mc:
+        #text = []
+        #if cnt > 100:
+        #    break
+        try:
+            qyp = open(document + constants.PREFIX, "w")
+        except:
+            continue
+        counted = False
         for word in ''.join(open(document, "r").readlines()).lower().split():
             if (word not in stoplist) and (not keys_in_word(blacklist, word)) and (unicode(word, errors='ignore') in all_q):
-                text.append(unicode(word, errors='ignore'))
-        if len(text) > 0:
-            texts.append(text)
-        cnt += 1
-        if cnt % 1000 == 0:
-            print "Processed %s docs." % str(cnt)
+        #        text.append(unicode(word, errors='ignore'))
+                if not counted:
+                    cnt+=1
+                    counted = True
+                #frequency[unicode(word, errors='ignore')] += 1
+                qyp.write(unicode(word, errors='ignore') + ' ')
+        cnt2+=1
+        qyp.close()
+         
+        #if len(text) > 0:
+        #    texts.append(text)
+        if cnt2 % 1000 == 0:
+            print "Processed %s docs." % str(cnt2)
     print "Processing succeeded"
-    sz1 = len(texts)
-    texts += queries
-    frequency = defaultdict(int)
-
-    for text in texts:
-        for token in text:
-            frequency[token] += 1
-            
-    return frequency, texts, sz1
+    #sz1 = len(texts)
+    #texts += queries        
+    #return frequency, texts, sz1
+    return cnt
 
 def convert_doc(frequency, doc):
     doc = [token for token in doc if frequency[token] > 1]
@@ -72,23 +85,60 @@ def get_queries_from(first, last):
     print "Total number of different queries: %s" % str(len(ans))
     return ans, total
 
+def get_words( x ):
+    ccc = []
+    ls = []
+    try:
+        ls = open(x).readlines()
+    except:
+        pass
+    if len(ls) > 0:
+        ccc = [ unicode(w, errors='ignore') for w in ls[0].split()]
+    return ccc
+
+
 def make_corpus(first, last):
     docs = []
     for i in range(0,constants.HASH_SIZE):
         folder = './descargas/' + str(i)
         for f in os.listdir(folder):
             docs.append(folder + '/' + f)
+    kq = open(constants.ALL_FILES, "w")
+    for name in docs:
+        if 'wil' not in name and 'txtW' not in name and name[-1] != 'w' and '\r' not in name:
+            kq.write(name + "\n")
+    kq.close()
+
     actual_doc_sz = len(docs)
     queries, actual_q_sz = get_queries_from(first, last)
     szq = len(queries)
-    dic, docs, sz_d = get_dict_from_docs(docs, queries)
-    c_docs = convert_multiple_docs(dic, docs)
-    dictionary = corpora.Dictionary(c_docs)
-    corpus = [dictionary.doc2bow(doc) for doc in c_docs]
+    #dic, docs, sz_d = get_dict_from_docs(docs, queries)
+    sz_d = get_dict_from_docs(docs, queries)
+    #c_docs = convert_multiple_docs(dic,docs)
+    #dictionary = corpora.Dictionary(c_docs)
+    di = DocIter.DocIter()
+    dictionary = corpora.Dictionary()
+    for x in di:
+        ccc = get_words(x)
+        if len (ccc) > 0:
+            dictionary.add_documents([ccc])
+    for qq in queries:
+        dictionary.add_documents([qq])
+    di = DocIter.DocIter()        
+    corpus = [] 
+    for x in di:
+        ccc = get_words(x)
+        if len (ccc) > 0:
+           corpus.append(dictionary.doc2bow(get_words(x)))
+    for qq in queries:
+        corpus.append(dictionary.doc2bow(qq))
     print "Number of nonempty docs: %s \n Number of nonempty queries: %s" % (sz_d, str(len(queries)))
+    #print "Corpus"
+    #print len(corpus)
+    #print sz_d
     cq = corpus[sz_d :]
     cd = corpus[0: sz_d]
-    print "cq %s" % str(len(cq))
+    #print "cq %s" % str(len(cq))
     tfidf = models.TfidfModel(corpus)
     return cd, cq, tfidf, actual_doc_sz, actual_q_sz
 
@@ -148,12 +198,12 @@ def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz):
         while True:
             bd, cov_q = get_best_doc_idx(docs_coverage, used_docs, threshold)
             size_before = len(covered)
-            if bd == -1 or cnt > 50:
+            if bd == -1 or cnt > 100:
                 break
-            query_p = (1.0 * len(covered)) / query_sz
+            query_p = (100.0 * len(covered)) / query_sz
             used_docs.add(bd)
             covered = covered.union(cov_q)
-            px.append((1.0*len(used_docs))/docs_sz)
+            px.append((100.0*len(used_docs))/docs_sz)
             py.append(query_p)
             cnt += 1
             print cnt
