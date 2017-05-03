@@ -33,7 +33,7 @@ def get_dict_from_docs(documents, queries):
         #if cnt > 100:
         #    break
         try:
-            qyp = open(document + constants.PREFIX, "w")
+            qyp = open((document + constants.PREFIX).replace('descargas', 'corp'), "w")
         except:
             continue
         counted = False
@@ -70,6 +70,7 @@ def get_queries_from(first, last):
     qs = []
     ans = []
     total = 0
+    counter = {}
     for i in range(first, last):
         doc_name = "logs/user-ct-test-collection-0" + str(i) + ".txt.gz"
         tq = get_queries(doc_name)
@@ -79,11 +80,16 @@ def get_queries_from(first, last):
         qs.sort()
         sz = len(qs)
         ans.append(qs[0])
+        counter[0] = 1
+        cnt = 0
         for i in range(1, sz):
             if qs[i] != qs[i-1]:
                 ans.append(qs[i])
+                cnt += 1
+                counter[cnt] = 0
+            counter[cnt] += 1
     print "Total number of different queries: %s" % str(len(ans))
-    return ans, total
+    return ans, total, counter
 
 def get_words( x ):
     ccc = []
@@ -97,7 +103,7 @@ def get_words( x ):
     return ccc
 
 
-def make_corpus(first, last):
+def make_corpus(queries, actual_q_sz):
     docs = []
     for i in range(0,constants.HASH_SIZE):
         folder = './descargas/' + str(i)
@@ -109,8 +115,6 @@ def make_corpus(first, last):
             kq.write(name + "\n")
     kq.close()
 
-    actual_doc_sz = len(docs)
-    queries, actual_q_sz = get_queries_from(first, last)
     szq = len(queries)
     #dic, docs, sz_d = get_dict_from_docs(docs, queries)
     sz_d = get_dict_from_docs(docs, queries)
@@ -118,7 +122,9 @@ def make_corpus(first, last):
     #dictionary = corpora.Dictionary(c_docs)
     di = DocIter.DocIter()
     dictionary = corpora.Dictionary()
+    cnt_d = 0
     for x in di:
+        cnt_d += 1
         ccc = get_words(x)
         if len (ccc) > 0:
             dictionary.add_documents([ccc])
@@ -140,7 +146,7 @@ def make_corpus(first, last):
     cd = corpus[0: sz_d]
     #print "cq %s" % str(len(cq))
     tfidf = models.TfidfModel(corpus)
-    return cd, cq, tfidf, actual_doc_sz, actual_q_sz
+    return cd, cq, tfidf, cnt_d, actual_q_sz
 
 def get_best_doc_idx(d, v, ts):
 
@@ -167,7 +173,7 @@ def get_doc_coverage(dd, qs, t):
 
     return ret
 
-def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz):
+def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts, real_q_sz):
     number_of_thresholds = 10
     thresholds = []
     docs_per_thr = []
@@ -194,31 +200,50 @@ def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz):
         print "docs_coverage computed"
         px = []
         py = []
+        px2 = []
+        py2 = []
         cnt = 0
+        actual_q_total = 0
         while True:
             bd, cov_q = get_best_doc_idx(docs_coverage, used_docs, threshold)
             size_before = len(covered)
-            if bd == -1 or cnt > 100:
+            if bd == -1:
                 break
+            for z in covered:
+                actual_q_total += cnts[z]
+            actual_query_p =  (100.0 * actual_q_total) / real_q_sz
             query_p = (100.0 * len(covered)) / query_sz
             used_docs.add(bd)
             covered = covered.union(cov_q)
             px.append((100.0*len(used_docs))/docs_sz)
             py.append(query_p)
+            px2.append((100.0*len(used_docs))/docs_sz)
+            py2.append(actual_query_p)
+            if query_p > 83:
+                break
             cnt += 1
             print cnt
         thresholds.append(threshold)
         docs_per_thr.append(cnt)
-        
+        #print px
+        #print px2
+        #print py
+        #print py2
         #plt.subplot(2,5,x+1)
         plt.plot(px, py, 'b--')
-        plt.ylabel('Percentage of covered queries over   %s' % actual_q_sz)
+        plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
+        plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
+        plt.title('Threshold = %s' % str(threshold))
+        fig.savefig('figures/latest-unique.png')
+        plt.figure(2)
+        plt.plot(px2, py2, 'b--')
+        plt.ylabel('Percentage of covered queries over   %s' % real_q_sz)
         plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
         plt.title('Threshold = %s' % str(threshold))
         fig.savefig('figures/latest.png')
 
-
 if __name__ == '__main__':
+    queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))
     if os.path.isfile(constants.CORPUS_FILE):
         corpus = corpora.MmCorpus(constants.CORPUS_FILE)
         dsz = int(sys.argv[4])
@@ -228,7 +253,8 @@ if __name__ == '__main__':
         cq = corpus[dsz:dsz+qsz]
         print "Corpus: %s Queries %s " % (str(len(cd)), str(len(cq)))
     else:
-        cd, cq, tfidf, dsz, qsz = make_corpus(int(sys.argv[1]), int(sys.argv[2]))
+        cd, cq, tfidf, dsz, qsz = make_corpus(queries, actual_q_sz)
+        print "Total of %s documents" % str(dsz)
         tfidf.save(constants.MODEL_FILE)
         corpora.MmCorpus.serialize(constants.CORPUS_FILE, cd + cq)
-    get_dot_and_plot(cd,cq, tfidf, float(sys.argv[3]), dsz, qsz)
+    get_dot_and_plot(cd,cq, tfidf, float(sys.argv[3]), dsz, qsz, counters, actual_q_sz)

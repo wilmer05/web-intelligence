@@ -43,7 +43,7 @@ def get_queries(file_name):
         valid = valid and ("http" in sl[4] or "www" in sl[4] or ".com" in sl[4])
         if valid:
             ff.append(sl[1])
-    
+    print "Hay %s queries con url." % str(len(ff)) 
     return ff
     
 

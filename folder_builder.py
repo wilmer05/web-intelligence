@@ -1,12 +1,12 @@
 import os
 import constants
 try:
-    os.makedirs("descargas/")
+    os.makedirs("corp/")
 except:
     pass
 
 for i in range(0,constants.HASH_SIZE):
     try:
-        os.makedirs("descargas/" + str(i) + "/")
+        os.makedirs("corp/" + str(i) + "/")
     except:
         pass
