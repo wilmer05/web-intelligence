@@ -26,6 +26,25 @@ def get_filtered_lines(in_file, out_file, print_graph = True):
         f.close()
     f1.close()
     return ff
+
+def get_queries(file_name):
+    f1 = gzip.open(file_name)
+    data = f1.read()
+    ff = []
+    for line in data.splitlines():
+        sl = line.split("\t")
+        if len(sl) < 5:
+            continue
+        valid = True
+        for invalid_filter in constants.forbidden_search_words:
+            if invalid_filter in sl[1]:
+                valid = False
+                break
+        valid = valid and ("http" in sl[4] or "www" in sl[4] or ".com" in sl[4])
+        if valid:
+            ff.append(sl[1])
+    
+    return ff
     
 
 if __name__ == "__main__":

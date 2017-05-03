@@ -10,3 +10,7 @@ last_queue*
 timeouts/
 descargas/
 pages2/
+figures/*
+*.mm
+*.mm.index
+my_model
