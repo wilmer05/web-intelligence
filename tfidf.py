@@ -6,7 +6,7 @@ import constants
 import os
 from log_filter import get_queries
 import geom
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import MyCorpus
 import DocIter
 def keys_in_word(keys, word):
@@ -29,14 +29,19 @@ def get_dict_from_docs(documents, queries):
     mc = MyCorpus.MyCorpus()
     #frequency = defaultdict(int)
     for document in mc:
+        cnt2+=1
+        if cnt2 % 1000 == 0:
+            print "Processed %s docs." % str(cnt2)
         #text = []
         #if cnt > 100:
         #    break
+        counted = False
+	if not os.path.isfile(document):
+		continue
         try:
             qyp = open((document + constants.PREFIX).replace('descargas', 'corp'), "w")
         except:
             continue
-        counted = False
         for word in ''.join(open(document, "r").readlines()).lower().split():
             if (word not in stoplist) and (not keys_in_word(blacklist, word)) and (unicode(word, errors='ignore') in all_q):
         #        text.append(unicode(word, errors='ignore'))
@@ -45,13 +50,10 @@ def get_dict_from_docs(documents, queries):
                     counted = True
                 #frequency[unicode(word, errors='ignore')] += 1
                 qyp.write(unicode(word, errors='ignore') + ' ')
-        cnt2+=1
         qyp.close()
          
         #if len(text) > 0:
         #    texts.append(text)
-        if cnt2 % 1000 == 0:
-            print "Processed %s docs." % str(cnt2)
     print "Processing succeeded"
     #sz1 = len(texts)
     #texts += queries        
@@ -192,7 +194,7 @@ def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts,
         #threshold = ((x+1) * 1.0) * (0.05/number_of_thresholds)
         #threshold = 0.01
         print "Tsh #%s" % (str(threshold))
-        fig = plt.figure(1)
+        #fig = plt.figure(1)
         covered = set()
         used_docs = set()
         print "Computing docs_coverage"
@@ -230,27 +232,32 @@ def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts,
         #print py
         #print py2
         #plt.subplot(2,5,x+1)
-        plt.plot(px, py, 'b--')
-        plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
-        plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
-        plt.title('Threshold = %s' % str(threshold))
-        fig.savefig('figures/latest-unique.png')
-        plt.figure(2)
-        plt.plot(px2, py2, 'b--')
-        plt.ylabel('Percentage of covered queries over   %s' % real_q_sz)
-        plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
-        plt.title('Threshold = %s' % str(threshold))
-        fig.savefig('figures/latest.png')
+        #plt.plot(px, py, 'b--')
+        #plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
+        #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
+        #plt.title('Threshold = %s' % str(threshold))
+        #fig.savefig('figures/latest-unique.png')
+        #plt.figure(2)
+        #plt.plot(px2, py2, 'b--')
+        #plt.ylabel('Percentage of covered queries over   %s' % real_q_sz)
+        #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
+        #plt.title('Threshold = %s' % str(threshold))
+        #fig.savefig('figures/latest.png')
+	print "Px %s \n Py %s" % (str(px), str(py))
+	print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
 
 if __name__ == '__main__':
     queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))
     if os.path.isfile(constants.CORPUS_FILE):
+	print "Reading corpus"
         corpus = corpora.MmCorpus(constants.CORPUS_FILE)
         dsz = int(sys.argv[4])
         qsz = int(sys.argv[5])
+	print "Reading model"
         tfidf = models.TfidfModel.load(constants.MODEL_FILE)
-        cd = corpus[0:dsz]
-        cq = corpus[dsz:dsz+qsz]
+	print "Model readed"
+        cd = corpus[0:-qsz]
+        cq = corpus[qsz:]
         print "Corpus: %s Queries %s " % (str(len(cd)), str(len(cq)))
     else:
         cd, cq, tfidf, dsz, qsz = make_corpus(queries, actual_q_sz)
