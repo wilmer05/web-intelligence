@@ -167,28 +167,21 @@ def get_best_doc_idx(d, v, ts):
             d[i] = d[i].difference(best)
     return idx, best
 
-def get_doc_coverage(dd, qs, t):
+def get_doc_coverage(dd, tfidf, qsz, t, corpus):
     ret = set()
-    for j in range(0, len(qs)):
-        if geom.get_cos(dd, qs[j]) >=t:
+    nd = geom.get_norm(tfidf[dd])
+    for j in range(1,qsz+1):
+        if geom.get_cos(dd, tfidf[corpus[-j]], nd) >=t:
             ret.add(j)
 
     return ret
 
-def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts, real_q_sz):
+def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts, real_q_sz):
     number_of_thresholds = 10
     thresholds = []
     docs_per_thr = []
-    cdtfidf = []
-    cqtfidf = []
-
     print "Computing cdtfidf"
-    for doc in cd:
-        cdtfidf.append(tfidf[doc])
-    for q in cq:
-        cqtfidf.append(tfidf[q])
-    query_sz = len(cq)
-    docs_sz = len(cd)
+    print docs_sz
     #for x in range(0,number_of_thresholds):
     if True:
         #threshold = ((x+1) * 1.0) * (0.05/number_of_thresholds)
@@ -198,7 +191,13 @@ def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts,
         covered = set()
         used_docs = set()
         print "Computing docs_coverage"
-        docs_coverage = [ get_doc_coverage(dd, cqtfidf, threshold) for dd in cdtfidf ]
+        docs_coverage = []
+        cc = 0
+        for dd in corpus:
+            docs_coverage.append(get_doc_coverage(dd, tfidf, query_sz, threshold, corpus))
+            cc += 1
+            if cc % 100 == 0:
+                print "Coverage until %s" % str(cc)
         print "docs_coverage computed"
         px = []
         py = []
@@ -231,7 +230,6 @@ def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts,
         #print px2
         #print py
         #print py2
-        #plt.subplot(2,5,x+1)
         #plt.plot(px, py, 'b--')
         #plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
         #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
@@ -239,29 +237,31 @@ def get_dot_and_plot(cd, cq, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts,
         #fig.savefig('figures/latest-unique.png')
         #plt.figure(2)
         #plt.plot(px2, py2, 'b--')
-        #plt.ylabel('Percentage of covered queries over   %s' % real_q_sz)
+        #plt.ylabel('Percentage of covered queries over   %s' % query_sz)
         #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
         #plt.title('Threshold = %s' % str(threshold))
         #fig.savefig('figures/latest.png')
-	print "Px %s \n Py %s" % (str(px), str(py))
-	print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
+        print "Px %s \n Py %s" % (str(px), str(py))
+        print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
 
 if __name__ == '__main__':
     queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))
     if os.path.isfile(constants.CORPUS_FILE):
-	print "Reading corpus"
+        print "Reading corpus"
         corpus = corpora.MmCorpus(constants.CORPUS_FILE)
         dsz = int(sys.argv[4])
         qsz = int(sys.argv[5])
-	print "Reading model"
+        print "Reading model"
         tfidf = models.TfidfModel.load(constants.MODEL_FILE)
-	print "Model readed"
-        cd = corpus[0:-qsz]
-        cq = corpus[qsz:]
-        print "Corpus: %s Queries %s " % (str(len(cd)), str(len(cq)))
+        print "Model readed"
+        #cd = corpus[0:-qsz]
+        #cq = corpus[-qsz:]
+        #cd = corpus[0:-qsz]
+        #cq = corpus[-qsz:]
+        print "Corpus: %s Queries %s " % (str(len(corpus)-qsz), str(qsz))
+        get_dot_and_plot(corpus, len(corpus)-qsz, qsz, tfidf, float(sys.argv[3]), dsz, actual_q_sz, counters, actual_q_sz)
     else:
         cd, cq, tfidf, dsz, qsz = make_corpus(queries, actual_q_sz)
         print "Total of %s documents" % str(dsz)
         tfidf.save(constants.MODEL_FILE)
         corpora.MmCorpus.serialize(constants.CORPUS_FILE, cd + cq)
-    get_dot_and_plot(cd,cq, tfidf, float(sys.argv[3]), dsz, qsz, counters, actual_q_sz)
