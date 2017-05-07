@@ -6,7 +6,7 @@ import constants
 import os
 from log_filter import get_queries
 import geom
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import MyCorpus
 import DocIter
 def keys_in_word(keys, word):
@@ -150,21 +150,31 @@ def make_corpus(queries, actual_q_sz):
     tfidf = models.TfidfModel(corpus)
     return cd, cq, tfidf, cnt_d, actual_q_sz
 
-def get_best_doc_idx(d, v, ts):
+def get_best_doc_idx(dtfidf, corpus, qsz, covered, v, ts, qtfidf):
 
     idx = -1
     best = set()
-    for i in range(0, len(d)):
-        if i in v or len(d[i]) ==0:
+    cd = 0
+    for d in dtfidf:
+        cd += 1
+        #print i
+        #d = tfidf[corpus[i]]
+        if cd in v or len(d) ==0:
             continue
-        co = d[i]
+        #n = 1
+        n = geom.get_norm(d)
+        co = set()
+        ##print len(tfidf[corpus[-qsz]])
+        cnt = 0
+        for qqq in qtfidf:
+            cnt+=1
+        #    #print len(tfidf[corpus[-j]])
+            if cnt not in covered and  geom.get_cos(d, qqq, n) > ts:
+                co.add(cnt)
         if len(co) > len(best):
             best = co
-            idx = i
-    if idx > -1:
-        sz = len(d)
-        for i in range(0, sz):
-            d[i] = d[i].difference(best)
+            idx = cd
+    print "Saliendo best doc idx"
     return idx, best
 
 def get_doc_coverage(dd, tfidf, qsz, t, corpus):
@@ -180,25 +190,32 @@ def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz,
     number_of_thresholds = 10
     thresholds = []
     docs_per_thr = []
-    print "Computing cdtfidf"
-    print docs_sz
     #for x in range(0,number_of_thresholds):
+    qtfidf = []
+    dtfidf = []
+    print "Computing qtfidf"
+    for i in range(1,query_sz + 1):
+        qtfidf.append(tfidf[corpus[-i]])
+    print "qtfidf computed"
+    print "Computing dtfidf"
+    for i in range(0, len(corpus) - query_sz):
+        dtfidf.append(tfidf[corpus[i]])
+    print "dtfidf computed"
     if True:
         #threshold = ((x+1) * 1.0) * (0.05/number_of_thresholds)
         #threshold = 0.01
         print "Tsh #%s" % (str(threshold))
-        #fig = plt.figure(1)
         covered = set()
         used_docs = set()
         print "Computing docs_coverage"
         docs_coverage = []
         cc = 0
-        for dd in corpus:
-            docs_coverage.append(get_doc_coverage(dd, tfidf, query_sz, threshold, corpus))
-            cc += 1
-            if cc % 100 == 0:
-                print "Coverage until %s" % str(cc)
-        print "docs_coverage computed"
+        #for dd in corpus:
+        #    docs_coverage.append(get_doc_coverage(dd, tfidf, query_sz, threshold, corpus))
+        #    cc += 1
+        #    if cc % 100 == 0:
+        #        print "Coverage until %s" % str(cc)
+        #print "docs_coverage computed"
         px = []
         py = []
         px2 = []
@@ -206,7 +223,7 @@ def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz,
         cnt = 0
         actual_q_total = 0
         while True:
-            bd, cov_q = get_best_doc_idx(docs_coverage, used_docs, threshold)
+            bd, cov_q = get_best_doc_idx(dtfidf, corpus, query_sz, covered, used_docs, threshold, qtfidf)
             size_before = len(covered)
             if bd == -1:
                 break
@@ -220,16 +237,32 @@ def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz,
             py.append(query_p)
             px2.append((100.0*len(used_docs))/docs_sz)
             py2.append(actual_query_p)
-            if query_p > 83:
+            print "Query_p = %s" % str(query_p)
+            if query_p > 83 or cnt > 150:
                 break
             cnt += 1
             print cnt
+            fig = plt.figure(1)
+            plt.plot(px, py, 'b--')
+            plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
+            plt.xlabel('Percentage of documents used over   %s' % docs_sz)
+            plt.title('Threshold = %s' % str(threshold))
+            fig.savefig('figures/latest-unique.png')
+            fir2 = plt.figure(2)
+            plt.plot(px2, py2, 'b--')
+            plt.ylabel('Percentage of covered queries over   %s' % actual_q_sz)
+            plt.xlabel('Percentage of documents used over   %s' % docs_sz)
+            plt.title('Threshold = %s' % str(threshold))
+            fig.savefig('figures/latest.png')
+            fig.savefig('figures/lates-unique.png')
+            print "Px %s \n Py %s" % (str(px), str(py))
+            print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
+
+
         thresholds.append(threshold)
         docs_per_thr.append(cnt)
-        #print px
-        #print px2
-        #print py
-        #print py2
+
+        #fig = plt.figure(1)
         #plt.plot(px, py, 'b--')
         #plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
         #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
@@ -241,8 +274,8 @@ def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz,
         #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
         #plt.title('Threshold = %s' % str(threshold))
         #fig.savefig('figures/latest.png')
-        print "Px %s \n Py %s" % (str(px), str(py))
-        print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
+        #print "Px %s \n Py %s" % (str(px), str(py))
+        #print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
 
 if __name__ == '__main__':
     queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))
