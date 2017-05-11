@@ -85,7 +85,8 @@ def get_queries_from(first, last):
         counter[0] = 1
         cnt = 0
         for i in range(1, sz):
-            if qs[i] != qs[i-1]:
+            #if qs[i] != qs[i-1]:
+            if True:
                 ans.append(qs[i])
                 cnt += 1
                 counter[cnt] = 0
@@ -152,30 +153,31 @@ def make_corpus(queries, actual_q_sz):
 
 def get_best_doc_idx(dtfidf, corpus, qsz, covered, v, ts, qtfidf):
 
-    idx = -1
-    best = set()
+    ans = [-1, -1, -1]
+    best = [set(), set(), set()]
     cd = 0
     for d in dtfidf:
         cd += 1
         #print i
         #d = tfidf[corpus[i]]
-        if cd in v or len(d) ==0:
-            continue
-        #n = 1
         n = geom.get_norm(d)
-        co = set()
-        ##print len(tfidf[corpus[-qsz]])
-        cnt = 0
-        for qqq in qtfidf:
-            cnt+=1
-        #    #print len(tfidf[corpus[-j]])
-            if cnt not in covered and  geom.get_cos(d, qqq, n) > ts:
-                co.add(cnt)
-        if len(co) > len(best):
-            best = co
-            idx = cd
+        for idx in range(0, len(v)):
+            if cd in v[idx] or len(d) ==0:
+                continue
+            #n = 1
+            co = set()
+            ##print len(tfidf[corpus[-qsz]])
+            cnt = 0
+            for qqq in qtfidf:
+                cnt+=1
+            #    #print len(tfidf[corpus[-j]])
+                if geom.get_cos(d, qqq, n) > ts[idx] and cnt not in covered[idx]:
+                    co.add(cnt)
+            if len(co) > len(best[idx]):
+                best[idx] = co
+                ans[idx] = cd
     print "Saliendo best doc idx"
-    return idx, best
+    return ans, best
 
 def get_doc_coverage(dd, tfidf, qsz, t, corpus):
     ret = set()
@@ -205,8 +207,8 @@ def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz,
         #threshold = ((x+1) * 1.0) * (0.05/number_of_thresholds)
         #threshold = 0.01
         print "Tsh #%s" % (str(threshold))
-        covered = set()
-        used_docs = set()
+        covered = [set(), set(), set()]
+        used_docs = [set(), set(), set()]
         print "Computing docs_coverage"
         docs_coverage = []
         cc = 0
@@ -216,49 +218,69 @@ def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz,
         #    if cc % 100 == 0:
         #        print "Coverage until %s" % str(cc)
         #print "docs_coverage computed"
-        px = []
-        py = []
-        px2 = []
-        py2 = []
+        px = [[], [], []]
+        py = [[], [], []]
         cnt = 0
-        actual_q_total = 0
+        mts = [0.3, 0.4, 0.6]
         while True:
-            bd, cov_q = get_best_doc_idx(dtfidf, corpus, query_sz, covered, used_docs, threshold, qtfidf)
-            size_before = len(covered)
-            if bd == -1:
+
+            bd, cov_q = get_best_doc_idx(dtfidf, corpus, query_sz, covered, used_docs, mts, qtfidf)
+            if -1 in bd:
                 break
-            for z in covered:
-                actual_q_total += cnts[z]
-            actual_query_p =  (100.0 * actual_q_total) / real_q_sz
-            query_p = (100.0 * len(covered)) / query_sz
-            used_docs.add(bd)
-            covered = covered.union(cov_q)
-            px.append((100.0*len(used_docs))/docs_sz)
-            py.append(query_p)
+        #if bd == -1:
+        #    break
+            for idx in range(0,len(mts)):
+                size_before = len(covered[idx])
+                actual_q_total = 0
+                for z in covered[idx]:
+                    actual_q_total += cnts[z]
+                #print " %s vs %s" % (str(len(covered)) ,str(actual_q_total))
+                #print " %s vs %s" % (str(real_q_sz) ,str(query_sz))
+                actual_query_p =  (100.0 * actual_q_total) / real_q_sz
+                query_p = (100.0 * len(covered[idx])) / query_sz
+                used_docs[idx].add(bd[idx])
+                covered[idx] = covered[idx].union(cov_q[idx])
+                px[idx].append((100.0*len(used_docs[idx]))/docs_sz)
+                py[idx].append(query_p)
+
+            #px3.append((100.0*len(used_docs[idx]))/docs_sz)
+            #py3.append(actual_query_p)
             #px2.append((100.0*len(used_docs))/docs_sz)
             #py2.append(actual_query_p)
-            px2.append(cnt)
-            new_q = len(covered) - size_before
-            py2.append(new_q)
-            print "Query_p = %s" % str(query_p)
-            if query_p > 83 or cnt > 150:
-                break
+            #px2.append(cnt)
+            #new_q = len(covered) - size_before
+            #py2.append(new_q)
+            #print "Query_p = %s" % str(query_p)
+            #if query_p > 83 or cnt > 150:
+            #    break
             cnt += 1
+            if cnt > 50:
+                break
             print cnt
             fig = plt.figure(1)
-            plt.plot(px, py, 'b--')
-            plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
+            plt.clf()
+            for idx in range(0, len(mts)): 
+                plt.plot(px[idx], py[idx], '-', label='threshold %s' % str(mts[idx]))
+
+            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+            plt.ylabel('Percentage of covered unique queries over   %s' % (3000))
             plt.xlabel('Percentage of documents used over   %s' % docs_sz)
-            plt.title('Threshold = %s' % str(threshold))
             fig.savefig('figures/latest.png')
-            fig2 = plt.figure(2)
-            plt.plot(px2, py2, 'b--')
-            plt.ylabel('Number of new queries since last step')
-            plt.xlabel('Number of documents used to cover')
-            plt.title('Threshold = %s' % str(threshold))
-            fig2.savefig('figures/latest-new.png')
+            #fig2 = plt.figure(2)
+            #plt.plot(px2, py2, 'b--')
+            #plt.ylabel('Number of new queries since last step')
+            #plt.xlabel('Number of documents used to cover')
+            #plt.title('Threshold = %s' % str(threshold))
+            #fig2.savefig('figures/latest-new.png')
+            #fig3 = plt.figure(3)
+            #plt.plot(px3, py3, 'b--')
+            #plt.ylabel('Percentage of covered queries')
+            #plt.xlabel('Percentage of documents to cover the queries')
+            #plt.title('Threshold = %s' % str(threshold))
+            #fig3.savefig('figures/latest-not-unique.png')
             print "Px %s \n Py %s" % (str(px), str(py))
-            print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
+            #print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
+            #print "Px3 %s \n Py3 %s" % (str(px3), str(py3))
 
 
         thresholds.append(threshold)
