@@ -9,6 +9,7 @@ import geom
 import matplotlib.pyplot as plt
 import MyCorpus
 import DocIter
+import numpy as np
 def keys_in_word(keys, word):
     for i in keys:
         if i in word:
@@ -148,34 +149,52 @@ def make_corpus(queries, actual_q_sz):
     cq = corpus[sz_d :]
     cd = corpus[0: sz_d]
     #print "cq %s" % str(len(cq))
-    tfidf = models.TfidfModel(corpus)
+    dictionary.save(constants.DICT_FILE)
+    tfidf = models.TfidfModel(cd)
     return cd, cq, tfidf, cnt_d, actual_q_sz
 
-def get_best_doc_idx(dtfidf, corpus, qsz, covered, v, ts, qtfidf):
+def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
 
-    ans = [-1, -1, -1]
-    best = [set(), set(), set()]
+    ans = [-1 for t in ts]
+    best = [set() for t in ts]
     cd = 0
-    for d in dtfidf:
-        cd += 1
-        #print i
-        #d = tfidf[corpus[i]]
-        n = geom.get_norm(d)
-        for idx in range(0, len(v)):
-            if cd in v[idx] or len(d) ==0:
+    cnt = [{} for t in ts]
+    for i in range(0,len(ts)):
+        cc = -1
+        prt = False
+        print "Threshold %s" % (ts[i])
+        for q in qtfidf:
+            cc += 1
+            if cc in covered[i]:
                 continue
-            #n = 1
-            co = set()
-            ##print len(tfidf[corpus[-qsz]])
-            cnt = 0
-            for qqq in qtfidf:
-                cnt+=1
-            #    #print len(tfidf[corpus[-j]])
-                if geom.get_cos(d, qqq, n) > ts[idx] and cnt not in covered[idx]:
-                    co.add(cnt)
-            if len(co) > len(best[idx]):
-                best[idx] = co
-                ans[idx] = cd
+            sims = index[q]
+            imp = np.nonzero(sims)[0]
+            #if not prt and :
+            if len(imp) == 0:
+                continue
+            #print len(imp) 
+            for d in imp:
+                s =  sims[d]
+                if d in v[i]:
+                    continue
+                if ts[i] > s:
+                   continue
+                if d not in cnt[i]:
+                   cnt[i][d] = 1
+                else:
+                   cnt[i][d] += 1
+    for k in range(0, len(ts)):
+        for d in cnt[k]:
+            if ans[k] == -1 or cnt[k][d] > cnt[k][ans[k]]:
+                ans[k] = d
+    print "ANS: %s " % str(ans)
+
+    for k in range(0, len(ts)):
+        if ans[k] != -1:
+            sims = index_q[dtfidf[ans[k]]]
+            for q, s in list(enumerate(sims)):
+                if q not in covered and s >= ts[k]:
+                    best[k].add(q)
     print "Saliendo best doc idx"
     return ans, best
 
@@ -188,54 +207,37 @@ def get_doc_coverage(dd, tfidf, qsz, t, corpus):
 
     return ret
 
-def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz, actual_q_sz, cnts, real_q_sz):
+def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q):
     number_of_thresholds = 10
     thresholds = []
     docs_per_thr = []
-    #for x in range(0,number_of_thresholds):
-    qtfidf = []
-    dtfidf = []
-    print "Computing qtfidf"
-    for i in range(1,query_sz + 1):
-        qtfidf.append(tfidf[corpus[-i]])
-    print "qtfidf computed"
     print "Computing dtfidf"
-    for i in range(0, len(corpus) - query_sz):
-        dtfidf.append(tfidf[corpus[i]])
+    dtfidf = tfidf[corpus]
+    qtfidf = tfidf[q_corpus]
     print "dtfidf computed"
     if True:
-        #threshold = ((x+1) * 1.0) * (0.05/number_of_thresholds)
-        #threshold = 0.01
         print "Tsh #%s" % (str(threshold))
-        covered = [set(), set(), set()]
-        used_docs = [set(), set(), set()]
-        print "Computing docs_coverage"
+        mts = [0.3, 0.4, 0.6]
+        covered = [set() for x in mts]
+        used_docs = [set() for x in mts]
         docs_coverage = []
         cc = 0
-        #for dd in corpus:
-        #    docs_coverage.append(get_doc_coverage(dd, tfidf, query_sz, threshold, corpus))
-        #    cc += 1
-        #    if cc % 100 == 0:
-        #        print "Coverage until %s" % str(cc)
-        #print "docs_coverage computed"
         px = [[], [], []]
         py = [[], [], []]
         cnt = 0
-        mts = [0.3, 0.4, 0.6]
+        real_q_sz = 3000
+        query_sz = 3000
+        docs_sz = len(dtfidf)
         while True:
 
-            bd, cov_q = get_best_doc_idx(dtfidf, corpus, query_sz, covered, used_docs, mts, qtfidf)
+            bd, cov_q = get_best_doc_idx(dtfidf, corpus, covered, used_docs, mts, qtfidf, index, index_q)
             if -1 in bd:
                 break
-        #if bd == -1:
-        #    break
             for idx in range(0,len(mts)):
                 size_before = len(covered[idx])
                 actual_q_total = 0
                 for z in covered[idx]:
                     actual_q_total += cnts[z]
-                #print " %s vs %s" % (str(len(covered)) ,str(actual_q_total))
-                #print " %s vs %s" % (str(real_q_sz) ,str(query_sz))
                 actual_query_p =  (100.0 * actual_q_total) / real_q_sz
                 query_p = (100.0 * len(covered[idx])) / query_sz
                 used_docs[idx].add(bd[idx])
@@ -263,24 +265,9 @@ def get_dot_and_plot(corpus, docs_sz, query_sz, tfidf, threshold, actual_doc_sz,
                 plt.plot(px[idx], py[idx], '-', label='threshold %s' % str(mts[idx]))
 
             plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-            plt.ylabel('Percentage of covered unique queries over   %s' % (3000))
+            plt.ylabel('Percentage of covered unique queries over   %s' % (real_q_sz))
             plt.xlabel('Percentage of documents used over   %s' % docs_sz)
             fig.savefig('figures/latest.png')
-            #fig2 = plt.figure(2)
-            #plt.plot(px2, py2, 'b--')
-            #plt.ylabel('Number of new queries since last step')
-            #plt.xlabel('Number of documents used to cover')
-            #plt.title('Threshold = %s' % str(threshold))
-            #fig2.savefig('figures/latest-new.png')
-            #fig3 = plt.figure(3)
-            #plt.plot(px3, py3, 'b--')
-            #plt.ylabel('Percentage of covered queries')
-            #plt.xlabel('Percentage of documents to cover the queries')
-            #plt.title('Threshold = %s' % str(threshold))
-            #fig3.savefig('figures/latest-not-unique.png')
-            print "Px %s \n Py %s" % (str(px), str(py))
-            #print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
-            #print "Px3 %s \n Py3 %s" % (str(px3), str(py3))
 
 
         thresholds.append(threshold)
@@ -306,19 +293,21 @@ if __name__ == '__main__':
     if os.path.isfile(constants.CORPUS_FILE):
         print "Reading corpus"
         corpus = corpora.MmCorpus(constants.CORPUS_FILE)
-        dsz = int(sys.argv[4])
-        qsz = int(sys.argv[5])
-        print "Reading model"
+        q_corpus = corpora.MmCorpus(constants.QUERIES_FILE)
         tfidf = models.TfidfModel.load(constants.MODEL_FILE)
-        print "Model readed"
-        #cd = corpus[0:-qsz]
-        #cq = corpus[-qsz:]
-        #cd = corpus[0:-qsz]
-        #cq = corpus[-qsz:]
-        print "Corpus: %s Queries %s " % (str(len(corpus)-qsz), str(qsz))
-        get_dot_and_plot(corpus, len(corpus)-qsz, qsz, tfidf, float(sys.argv[3]), dsz, actual_q_sz, counters, actual_q_sz)
+        dic = corpora.Dictionary.load(constants.DICT_FILE)
+        index = similarities.MatrixSimilarity.load(constants.INDEX_FILE)
+        index_q = similarities.MatrixSimilarity.load(constants.INDEX_QUERIES_FILE)
+        print "Corpus and models readed"
+        print "Corpus: %s Queries %s " % (str(len(corpus)-len(q_corpus)), str(len(q_corpus)))
+        get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), counters, dic, index, index_q)
     else:
         cd, cq, tfidf, dsz, qsz = make_corpus(queries, actual_q_sz)
         print "Total of %s documents" % str(dsz)
         tfidf.save(constants.MODEL_FILE)
-        corpora.MmCorpus.serialize(constants.CORPUS_FILE, cd + cq)
+        corpora.MmCorpus.serialize(constants.CORPUS_FILE, cd)
+        corpora.MmCorpus.serialize(constants.QUERIES_FILE, cq)
+        index = similarities.MatrixSimilarity(tfidf[cd])
+        index.save(constants.INDEX_FILE)
+        index_q = similarities.MatrixSimilarity(tfidf[cq])
+        index_q.save(constants.INDEX_QUERIES_FILE)

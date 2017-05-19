@@ -19,3 +19,4 @@ figures/*
 my_model
 my_env/*
 gensim*
+*.dict
