@@ -162,7 +162,7 @@ def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
     for i in range(0,len(ts)):
         cc = -1
         prt = False
-        print "Threshold %s" % (ts[i])
+        #print "Threshold %s" % (ts[i])
         for q in qtfidf:
             cc += 1
             if cc in covered[i]:
@@ -187,7 +187,7 @@ def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
         for d in cnt[k]:
             if ans[k] == -1 or cnt[k][d] > cnt[k][ans[k]]:
                 ans[k] = d
-    print "ANS: %s " % str(ans)
+    #print "ANS: %s " % str(ans)
 
     for k in range(0, len(ts)):
         if ans[k] != -1:
@@ -225,8 +225,8 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
         px = [[], [], []]
         py = [[], [], []]
         cnt = 0
-        real_q_sz = 3000
-        query_sz = 3000
+        real_q_sz = len(qtfidf)
+        query_sz = len(qtfidf)
         docs_sz = len(dtfidf)
         while True:
 
@@ -243,8 +243,9 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
                 used_docs[idx].add(bd[idx])
                 covered[idx] = covered[idx].union(cov_q[idx])
                 px[idx].append((100.0*len(used_docs[idx]))/docs_sz)
-                py[idx].append(query_p)
+                #py[idx].append(query_p)
 
+                py[idx].append(actual_query_p)
             #px3.append((100.0*len(used_docs[idx]))/docs_sz)
             #py3.append(actual_query_p)
             #px2.append((100.0*len(used_docs))/docs_sz)
@@ -256,9 +257,9 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
             #if query_p > 83 or cnt > 150:
             #    break
             cnt += 1
-            if cnt > 50:
+            if cnt > 300:
                 break
-            print cnt
+            print "Iteracion %s" % str(cnt)
             fig = plt.figure(1)
             plt.clf()
             for idx in range(0, len(mts)): 
