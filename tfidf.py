@@ -151,7 +151,7 @@ def make_corpus(queries, actual_q_sz):
     #print "cq %s" % str(len(cq))
     dictionary.save(constants.DICT_FILE)
     tfidf = models.TfidfModel(cd)
-    return cd, cq, tfidf, cnt_d, actual_q_sz
+    return cd, cq, tfidf, cnt_d, actual_q_sz, len(dictionary)
 
 def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
 
@@ -297,18 +297,19 @@ if __name__ == '__main__':
         q_corpus = corpora.MmCorpus(constants.QUERIES_FILE)
         tfidf = models.TfidfModel.load(constants.MODEL_FILE)
         dic = corpora.Dictionary.load(constants.DICT_FILE)
-        index = similarities.MatrixSimilarity.load(constants.INDEX_FILE)
-        index_q = similarities.MatrixSimilarity.load(constants.INDEX_QUERIES_FILE)
+        index = similarities.Similarity.load(constants.INDEX_FILE)
+        index_q = similarities.Similarity.load(constants.INDEX_QUERIES_FILE)
         print "Corpus and models readed"
         print "Corpus: %s Queries %s " % (str(len(corpus)-len(q_corpus)), str(len(q_corpus)))
         get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), counters, dic, index, index_q)
     else:
-        cd, cq, tfidf, dsz, qsz = make_corpus(queries, actual_q_sz)
+        cd, cq, tfidf, dsz, qsz, ldic = make_corpus(queries, actual_q_sz)
         print "Total of %s documents" % str(dsz)
         tfidf.save(constants.MODEL_FILE)
         corpora.MmCorpus.serialize(constants.CORPUS_FILE, cd)
         corpora.MmCorpus.serialize(constants.QUERIES_FILE, cq)
-        index = similarities.MatrixSimilarity(tfidf[cd])
+        print "LDIC = %s" % str(ldic)
+        index = similarities.Similarity(constants.INDEX_PREFIX, tfidf[cd], ldic)
         index.save(constants.INDEX_FILE)
-        index_q = similarities.MatrixSimilarity(tfidf[cq])
+        index_q = similarities.Similarity(constants.INDEX_QUERIES_PREFIX, tfidf[cq], ldic)
         index_q.save(constants.INDEX_QUERIES_FILE)
