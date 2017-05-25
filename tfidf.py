@@ -16,9 +16,14 @@ def keys_in_word(keys, word):
             return True
     return False
 
+def process_word(w, b_list):
+    for x in b_list:
+        w.replace(str(x), " ")
+    return w.split()
+
 def get_dict_from_docs(documents, queries):
-    stoplist = set('for a of the and to in'.split())
-    blacklist = set('css $( < > { } foter _ - class= bgcolor'.split())
+    stoplist = set(u'for a of the and to in'.split())
+    blacklist = set(u'\" <html> </i> <i> css $( <p> </p> <a> </a> </div> <div> < > { } foter _ - class= bgcolor = <br <a <li </li> </ul> <ul , '.split())
     print "Processing texts"
     cnt = 0
     cnt2 = 0
@@ -26,7 +31,7 @@ def get_dict_from_docs(documents, queries):
     all_q = set()
     for q in queries:
         for w in q:
-            all_q.add(w)
+            all_q.add(w.lower())
     mc = MyCorpus.MyCorpus()
     #frequency = defaultdict(int)
     for document in mc:
@@ -37,20 +42,25 @@ def get_dict_from_docs(documents, queries):
         #if cnt > 100:
         #    break
         counted = False
-	if not os.path.isfile(document):
-		continue
+        if not os.path.isfile(document):
+		    continue
         try:
             qyp = open((document + constants.PREFIX).replace('descargas', 'corp'), "w")
         except:
             continue
-        for word in ''.join(open(document, "r").readlines()).lower().split():
-            if (word not in stoplist) and (not keys_in_word(blacklist, word)) and (unicode(word, errors='ignore') in all_q):
-        #        text.append(unicode(word, errors='ignore'))
-                if not counted:
-                    cnt+=1
-                    counted = True
-                #frequency[unicode(word, errors='ignore')] += 1
-                qyp.write(unicode(word, errors='ignore') + ' ')
+        for w in ''.join(open(document, "r").readlines()).lower().split():
+            processed_word = process_word(w, blacklist)
+            for word in processed_word:
+#                if (word not in stoplist) and ( word not in blacklist) and (unicode(word, errors='ignore') in all_q):
+
+                if word not in stoplist and (unicode(word, errors='ignore') in all_q):
+            #        text.append(unicode(word, errors='ignore'))
+                #    print word
+                    if not counted:
+                        cnt+=1
+                        counted = True
+                    #frequency[unicode(word, errors='ignore')] += 1
+                    qyp.write(unicode(word, errors='ignore') + ' ')
         qyp.close()
          
         #if len(text) > 0:
@@ -120,10 +130,7 @@ def make_corpus(queries, actual_q_sz):
     kq.close()
 
     szq = len(queries)
-    #dic, docs, sz_d = get_dict_from_docs(docs, queries)
     sz_d = get_dict_from_docs(docs, queries)
-    #c_docs = convert_multiple_docs(dic,docs)
-    #dictionary = corpora.Dictionary(c_docs)
     di = DocIter.DocIter()
     dictionary = corpora.Dictionary()
     cnt_d = 0
@@ -150,7 +157,7 @@ def make_corpus(queries, actual_q_sz):
     cd = corpus[0: sz_d]
     #print "cq %s" % str(len(cq))
     dictionary.save(constants.DICT_FILE)
-    tfidf = models.TfidfModel(cd)
+    tfidf = models.TfidfModel(corpus)
     return cd, cq, tfidf, cnt_d, actual_q_sz, len(dictionary)
 
 def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
@@ -159,20 +166,26 @@ def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
     best = [set() for t in ts]
     cd = 0
     cnt = [{} for t in ts]
-    for i in range(0,len(ts)):
-        cc = -1
+    cc = -1
+    for q in qtfidf:
+        cc += 1
+        #print cc
         prt = False
         #print "Threshold %s" % (ts[i])
-        for q in qtfidf:
-            cc += 1
+        sims = None
+        imp = None
+        for i in range(0,len(ts)):
+            #print "Computing %s " % str(q) 
             if cc in covered[i]:
                 continue
-            sims = index[q]
-            imp = np.nonzero(sims)[0]
+            if sims is None:
+                sims = index[q]
+                imp = np.nonzero(sims)[0]
             #if not prt and :
             if len(imp) == 0:
                 continue
             #print len(imp) 
+            #print imp
             for d in imp:
                 s =  sims[d]
                 if d in v[i]:
@@ -183,6 +196,7 @@ def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
                    cnt[i][d] = 1
                 else:
                    cnt[i][d] += 1
+
     for k in range(0, len(ts)):
         for d in cnt[k]:
             if ans[k] == -1 or cnt[k][d] > cnt[k][ans[k]]:
@@ -212,6 +226,9 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
     thresholds = []
     docs_per_thr = []
     print "Computing dtfidf"
+    for q in q_corpus:
+        if len(q) == 0:
+            print "BLA"
     dtfidf = tfidf[corpus]
     qtfidf = tfidf[q_corpus]
     print "dtfidf computed"
