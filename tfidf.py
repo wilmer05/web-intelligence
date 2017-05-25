@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import MyCorpus
 import DocIter
 import numpy as np
+import greedy_pick
 def keys_in_word(keys, word):
     for i in keys:
         if i in word:
@@ -160,6 +161,29 @@ def make_corpus(queries, actual_q_sz):
     tfidf = models.TfidfModel(corpus)
     return cd, cq, tfidf, cnt_d, actual_q_sz, len(dictionary)
 
+def get_edges(ts, qtfidf, index):
+
+    edges = []
+    print "Computing edges"
+    cc = -1
+    for q in qtfidf:
+        cc += 1
+        prt = False
+        sims = index[q]
+        imp = np.nonzero(sims)[0]
+        if len(imp) == 0:
+            continue
+        for d in imp:
+            s =  sims[d]
+            if ts > s:
+               continue
+            edges.append((d, cc)) 
+
+    print "Saliendo calc_edges idx"
+    return edges
+
+
+
 def get_best_doc_idx(dtfidf, corpus, covered, v, ts, qtfidf, index, index_q):
 
     ans = [-1 for t in ts]
@@ -223,46 +247,57 @@ def get_doc_coverage(dd, tfidf, qsz, t, corpus):
 
 def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q):
     number_of_thresholds = 10
-    thresholds = []
+    #thresholds = []
     docs_per_thr = []
     print "Computing dtfidf"
-    for q in q_corpus:
-        if len(q) == 0:
-            print "BLA"
+    #for q in q_corpus:
+    #    if len(q) == 0:
+    #        print q
     dtfidf = tfidf[corpus]
     qtfidf = tfidf[q_corpus]
+    #for q in qtfidf:
+    #    print q
+    #    if len(q) == 0:
+    #        print "WTF"
     print "dtfidf computed"
     if True:
         print "Tsh #%s" % (str(threshold))
-        mts = [0.3, 0.4, 0.6]
-        covered = [set() for x in mts]
-        used_docs = [set() for x in mts]
+        #mts = [0.3]
+        covered = set()
+        used_docs = set()
         docs_coverage = []
         cc = 0
-        px = [[], [], []]
-        py = [[], [], []]
+        #px = [[], [], []]
+        #py = [[], [], []]
+        px = []
+        py = []
         cnt = 0
         real_q_sz = len(qtfidf)
         query_sz = len(qtfidf)
         docs_sz = len(dtfidf)
+        edges = get_edges(threshold, qtfidf, index)
         while True:
-
-            bd, cov_q = get_best_doc_idx(dtfidf, corpus, covered, used_docs, mts, qtfidf, index, index_q)
-            if -1 in bd:
+            bd, cov_q = greedy_pick.greedy_pick(edges, used_docs, covered)
+            #bd, cov_q = get_best_doc_idx(dtfidf, corpus, covered, used_docs, mts, qtfidf, index, index_q)
+            if -1 == bd:
                 break
-            for idx in range(0,len(mts)):
-                size_before = len(covered[idx])
+            #for idx in range(0,len(mts)):
+            query_p = 0
+            if True:
+                size_before = len(covered)
                 actual_q_total = 0
-                for z in covered[idx]:
+                covered = covered.union(cov_q)
+                for z in covered:
                     actual_q_total += cnts[z]
                 actual_query_p =  (100.0 * actual_q_total) / real_q_sz
-                query_p = (100.0 * len(covered[idx])) / query_sz
-                used_docs[idx].add(bd[idx])
-                covered[idx] = covered[idx].union(cov_q[idx])
-                px[idx].append((100.0*len(used_docs[idx]))/docs_sz)
+                query_p = (100.0 * len(covered)) / query_sz
+                used_docs.add(bd)
+                #px[idx].append((100.0*len(used_docs[idx]))/docs_sz)
                 #py[idx].append(query_p)
 
-                py[idx].append(actual_query_p)
+                px.append((100.0*len(used_docs))/docs_sz)
+                py.append(actual_query_p)
+                #py[idx].append(actual_query_p)
             #px3.append((100.0*len(used_docs[idx]))/docs_sz)
             #py3.append(actual_query_p)
             #px2.append((100.0*len(used_docs))/docs_sz)
@@ -274,13 +309,15 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
             #if query_p > 83 or cnt > 150:
             #    break
             cnt += 1
-            if cnt > 300:
+            print query_p
+            if query_p > 20:
                 break
             print "Iteracion %s" % str(cnt)
             fig = plt.figure(1)
             plt.clf()
-            for idx in range(0, len(mts)): 
-                plt.plot(px[idx], py[idx], '-', label='threshold %s' % str(mts[idx]))
+            #for idx in range(0, len(mts)): 
+            if True:
+                plt.plot(px, py, '-', label='threshold %s' % str(threshold))
 
             plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
             plt.ylabel('Percentage of covered unique queries over   %s' % (real_q_sz))
@@ -288,8 +325,8 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
             fig.savefig('figures/latest.png')
 
 
-        thresholds.append(threshold)
-        docs_per_thr.append(cnt)
+        #thresholds.append(threshold)
+        #docs_per_thr.append(cnt)
 
         #fig = plt.figure(1)
         #plt.plot(px, py, 'b--')
