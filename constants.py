@@ -30,3 +30,6 @@ EDGES_SPLIT = 1000
 EDGES_FOLDER = 'edges/'
 NUMBER_OF_EDGES_FOLDER = 10000
 EDGES_FILE = 'edges_file.txt'
+EDGES_FLAG = '--compute-edges'
+NUMBER_OF_THREADS = 15
+EDGES_COMPUTED_FLAG = '--use-computed-edges'

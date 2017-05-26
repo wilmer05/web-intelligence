@@ -13,7 +13,7 @@ import numpy as np
 import greedy_pick
 import graph_builder
 import EdgesIter
-
+import time
 def keys_in_word(keys, word):
     for i in keys:
         if i in word:
@@ -248,7 +248,7 @@ def get_doc_coverage(dd, tfidf, qsz, t, corpus):
 
     return ret
 
-def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q, edge_mode):
+def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q, edges_flag, computed_edges_flag):
     number_of_thresholds = 10
     #thresholds = []
     docs_per_thr = []
@@ -278,10 +278,12 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
         real_q_sz = len(qtfidf)
         query_sz = len(qtfidf)
         docs_sz = len(dtfidf)
-        if edge_mode == 1:
+        if not edges_flag:
             edges = get_edges(threshold, qtfidf, index)
         else:
-            graph_builder.compute_edges(threshold, qtfidf, index)
+            if not computed_edges_flag:
+                print "### Computing edges ####"
+                graph_builder.multicore_compute_edges(threshold, qtfidf, index)
             edges = EdgesIter.EdgesIter()
         while True:
             bd, cov_q = greedy_pick.greedy_pick(edges, used_docs, covered)
@@ -352,6 +354,7 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
 
 if __name__ == '__main__':
     queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))
+        
     if os.path.isfile(constants.CORPUS_FILE):
         print "Reading corpus"
         corpus = corpora.MmCorpus(constants.CORPUS_FILE)
@@ -362,7 +365,8 @@ if __name__ == '__main__':
         index_q = similarities.Similarity.load(constants.INDEX_QUERIES_FILE)
         print "Corpus and models readed"
         print "Corpus: %s Queries %s " % (str(len(corpus)-len(q_corpus)), str(len(q_corpus)))
-        get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), counters, dic, index, index_q, int(sys.argv[4]))
+        
+        get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), counters, dic, index, index_q, constants.EDGES_FLAG in sys.argv, constants.EDGES_COMPUTED_FLAG in sys.argv)
     else:
         cd, cq, tfidf, dsz, qsz, ldic = make_corpus(queries, actual_q_sz)
         print "Total of %s documents" % str(dsz)

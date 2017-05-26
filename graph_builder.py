@@ -1,16 +1,36 @@
 import constants
 import numpy as np
-def compute_edges(ts, qtfidf, index):
-
+from threading import Thread 
+def multicore_compute_edges(tf, qtfidf, index):
+    ln = len(qtfidf) // constants.NUMBER_OF_THREADS
+    #print ln
     print "Computing edges"
-    cc = -1
+    threads = []
 
+    for i in range(0, constants.NUMBER_OF_THREADS):
+        th = Thread(target = compute_edges, args = [tf, qtfidf[ln * i : ln*(i+1)], index, i*ln])
+        th.start()
+        threads.append(th)
+    rest = len(qtfidf) % constants.NUMBER_OF_THREADS
+    
+    th = Thread(target = compute_edges, args = [tf, qtfidf[-rest: ], index, len(qtfidf) - ln * constants.NUMBER_OF_THREADS])
+    th.start()
+    threads.append(th)
+
+    for t in threads: 
+        t.join()
+
+    print "Saliendo compute edges idx"
+
+def compute_edges(ts, qtfidf, index, start_at = 0):
+
+    cc = -1
     f2 = open(constants.EDGES_FILE, "w")
     f2.close()
     for q in qtfidf:
         cc += 1
-        folder = cc / constants.EDGES_SPLIT
-        file_number = cc % constants.EDGES_SPLIT
+        folder = (cc + start_at) / constants.EDGES_SPLIT
+        file_number = (cc + start_at) % constants.EDGES_SPLIT
         fname = constants.EDGES_FOLDER + str(folder) + "/" + str(file_number)
         f2 = open(constants.EDGES_FILE, "a")
         f2.write(str(cc) + " " + fname + "\n")
@@ -28,4 +48,3 @@ def compute_edges(ts, qtfidf, index):
 
         f.close()
         f2.close()
-    print "Saliendo compute edges idx"
