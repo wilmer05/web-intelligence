@@ -22,3 +22,4 @@ gensim*
 *.dict
 CO/*
 QS/*
+edges_file.txt
