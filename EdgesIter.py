@@ -2,8 +2,12 @@ import constants
 from os import listdir
 from os.path import isfile, join
 class EdgesIter(object):
+
+    def __init__(self, th):
+        self.th = th
+
     def __iter__(self):
-        onlyFiles = [f for f in listdir(constants.EDGES_FOLDER) if isfile(join(constants.EDGES_FOLDER, f))]
+        onlyFiles = [f for f in listdir(constants.EDGES_FOLDER) if isfile(join(constants.EDGES_FOLDER, f)) and str(self.th) in f]
         for f in onlyFiles:
             for l in open(constants.EDGES_FOLDER + f):
                 info = l.split()

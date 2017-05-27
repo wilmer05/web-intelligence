@@ -269,11 +269,11 @@ def compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz
         px.append((100.0*len(used_docs))/docs_sz)
         py.append(actual_query_p)
         cnt += 1
-        print query_p
+        print "Percentage of query covered %s" % str(query_p)
         if query_p > 20:
             break
         print "Iteracion %s" % str(cnt)
-        print "Used docs: %s" % len(covered)
+        #print "Used docs: %s" % len(covered)
     return px, py, covered 
 
 def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q, edges_flag, computed_edges_flag, only_compute_edges_flag):
@@ -300,12 +300,12 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
     else:
         if not computed_edges_flag:
             print "### Computing edges ####"
-            graph_builder.multicore_compute_edges(threshold, qtfidf, index)
+            graph_builder.multicore_compute_edges(threshold, qtfidf, index, threshold)
             #graph_builder.compute_edges(threshold, qtfidf, index)
             if only_compute_edges_flag:
                 print "Edges computed, stoping script."
                 return None
-        edges = EdgesIter.EdgesIter()
+        edges = EdgesIter.EdgesIter(threshold)
 
     px, py, covered = compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
     fig = plt.figure(1)

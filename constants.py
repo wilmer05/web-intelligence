@@ -34,3 +34,5 @@ EDGES_FLAG = '--compute-edges'
 NUMBER_OF_THREADS = 15
 EDGES_COMPUTED_FLAG = '--use-computed-edges'
 ONLY_COMPUTE_EDGES_FLAG = '--only-compute-edges'
+POINTS_X = 'x_points.txt'
+POINTS_Y = 'y_points.txt'
