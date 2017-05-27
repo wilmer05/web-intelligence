@@ -248,113 +248,74 @@ def get_doc_coverage(dd, tfidf, qsz, t, corpus):
 
     return ret
 
+def compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz):
+    px = []
+    py = []
+    cnt = 0
+    while True:
+        bd, cov_q = greedy_pick.greedy_pick(edges, used_docs, covered)
+        if -1 == bd:
+            break
+        query_p = 0
+        size_before = len(covered)
+        actual_q_total = 0
+        covered = covered.union(cov_q)
+        for z in covered:
+            actual_q_total += cnts[z]
+        actual_query_p =  (100.0 * actual_q_total) / real_q_sz
+        query_p = (100.0 * len(covered)) / query_sz
+        used_docs.add(bd)
+
+        px.append((100.0*len(used_docs))/docs_sz)
+        py.append(actual_query_p)
+        cnt += 1
+        print query_p
+        if query_p > 20:
+            break
+        print "Iteracion %s" % str(cnt)
+        print "Used docs: %s" % len(covered)
+    return px, py, covered 
+
 def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q, edges_flag, computed_edges_flag, only_compute_edges_flag):
     number_of_thresholds = 10
-    #thresholds = []
     docs_per_thr = []
     print "Computing dtfidf"
-    #for q in q_corpus:
-    #    if len(q) == 0:
-    #        print q
     dtfidf = tfidf[corpus]
     qtfidf = tfidf[q_corpus]
-    #for q in qtfidf:
-    #    print q
-    #    if len(q) == 0:
-    #        print "WTF"
     print "dtfidf computed"
-    if True:
-        print "Tsh #%s" % (str(threshold))
-        #mts = [0.3]
-        covered = set()
-        used_docs = set()
-        docs_coverage = []
-        cc = 0
-        #px = [[], [], []]
-        #py = [[], [], []]
-        px = []
-        py = []
-        cnt = 0
-        real_q_sz = len(qtfidf)
-        query_sz = len(qtfidf)
-        docs_sz = len(dtfidf)
-        if not edges_flag:
-            edges = get_edges(threshold, qtfidf, index)
-        else:
-            if not computed_edges_flag:
-                print "### Computing edges ####"
-                graph_builder.multicore_compute_edges(threshold, qtfidf, index)
-                #graph_builder.compute_edges(threshold, qtfidf, index)
-                if only_compute_edges_flag:
-                    print "Edges computed, stoping script."
-                    return None
-            edges = EdgesIter.EdgesIter()
-        while True:
-            bd, cov_q = greedy_pick.greedy_pick(edges, used_docs, covered)
-            #bd, cov_q = get_best_doc_idx(dtfidf, corpus, covered, used_docs, mts, qtfidf, index, index_q)
-            if -1 == bd:
-                break
-            #for idx in range(0,len(mts)):
-            query_p = 0
-            if True:
-                size_before = len(covered)
-                actual_q_total = 0
-                covered = covered.union(cov_q)
-                for z in covered:
-                    actual_q_total += cnts[z]
-                actual_query_p =  (100.0 * actual_q_total) / real_q_sz
-                query_p = (100.0 * len(covered)) / query_sz
-                used_docs.add(bd)
-                #px[idx].append((100.0*len(used_docs[idx]))/docs_sz)
-                #py[idx].append(query_p)
+    print "Tsh #%s" % (str(threshold))
+    covered = set()
+    used_docs = set()
+    docs_coverage = []
+    cc = 0
+    px = []
+    py = []
+    #for q in dtfidf:
+    #    print len(dtfidf)
+    real_q_sz = len(qtfidf)
+    query_sz = len(qtfidf)
+    docs_sz = len(dtfidf)
+    if not edges_flag:
+        edges = get_edges(threshold, qtfidf, index)
+    else:
+        if not computed_edges_flag:
+            print "### Computing edges ####"
+            graph_builder.multicore_compute_edges(threshold, qtfidf, index)
+            #graph_builder.compute_edges(threshold, qtfidf, index)
+            if only_compute_edges_flag:
+                print "Edges computed, stoping script."
+                return None
+        edges = EdgesIter.EdgesIter()
 
-                px.append((100.0*len(used_docs))/docs_sz)
-                py.append(actual_query_p)
-                #py[idx].append(actual_query_p)
-            #px3.append((100.0*len(used_docs[idx]))/docs_sz)
-            #py3.append(actual_query_p)
-            #px2.append((100.0*len(used_docs))/docs_sz)
-            #py2.append(actual_query_p)
-            #px2.append(cnt)
-            #new_q = len(covered) - size_before
-            #py2.append(new_q)
-            #print "Query_p = %s" % str(query_p)
-            #if query_p > 83 or cnt > 150:
-            #    break
-            cnt += 1
-            print query_p
-            if query_p > 20:
-                break
-            print "Iteracion %s" % str(cnt)
-            fig = plt.figure(1)
-            plt.clf()
-            #for idx in range(0, len(mts)): 
-            if True:
-                plt.plot(px, py, '-', label='threshold %s' % str(threshold))
+    px, py, covered = compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
+    fig = plt.figure(1)
+    plt.clf()
 
-            plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
-            plt.ylabel('Percentage of covered unique queries over   %s' % (real_q_sz))
-            plt.xlabel('Percentage of documents used over   %s' % docs_sz)
-            fig.savefig('figures/latest.png')
-
-
-        #thresholds.append(threshold)
-        #docs_per_thr.append(cnt)
-
-        #fig = plt.figure(1)
-        #plt.plot(px, py, 'b--')
-        #plt.ylabel('Percentage of covered unique queries over   %s' % actual_q_sz)
-        #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
-        #plt.title('Threshold = %s' % str(threshold))
-        #fig.savefig('figures/latest-unique.png')
-        #plt.figure(2)
-        #plt.plot(px2, py2, 'b--')
-        #plt.ylabel('Percentage of covered queries over   %s' % query_sz)
-        #plt.xlabel('Percentage of documents used over   %s' % actual_doc_sz)
-        #plt.title('Threshold = %s' % str(threshold))
-        #fig.savefig('figures/latest.png')
-        #print "Px %s \n Py %s" % (str(px), str(py))
-        #print "Px2 %s \n Py2 %s" % (str(px2), str(py2))
+    plt.plot(px, py, '-', label='threshold %s' % str(threshold))
+    plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
+    plt.ylabel('Percentage of covered unique queries over   %s' % (real_q_sz))
+    plt.xlabel('Percentage of documents used over   %s' % docs_sz)
+    fig.savefig('figures/latest.png')
 
 if __name__ == '__main__':
     queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))

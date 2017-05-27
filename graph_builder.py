@@ -4,6 +4,7 @@ from threading import Thread
 def multicore_compute_edges(tf, qtfidf, index):
     ln = len(qtfidf) // constants.NUMBER_OF_THREADS
     #print ln
+    print "Each file will contain %s query_files edges" % str(ln)
     print "Computing edges"
     threads = []
 
