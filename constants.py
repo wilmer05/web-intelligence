@@ -33,3 +33,4 @@ EDGES_FILE = 'edges_file.txt'
 EDGES_FLAG = '--compute-edges'
 NUMBER_OF_THREADS = 15
 EDGES_COMPUTED_FLAG = '--use-computed-edges'
+ONLY_COMPUTE_EDGES_FLAG = '--only-compute-edges'

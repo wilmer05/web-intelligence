@@ -248,7 +248,7 @@ def get_doc_coverage(dd, tfidf, qsz, t, corpus):
 
     return ret
 
-def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q, edges_flag, computed_edges_flag):
+def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q, edges_flag, computed_edges_flag, only_compute_edges_flag):
     number_of_thresholds = 10
     #thresholds = []
     docs_per_thr = []
@@ -284,6 +284,10 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
             if not computed_edges_flag:
                 print "### Computing edges ####"
                 graph_builder.multicore_compute_edges(threshold, qtfidf, index)
+                #graph_builder.compute_edges(threshold, qtfidf, index)
+                if only_compute_edges_flag:
+                    print "Edges computed, stoping script."
+                    return None
             edges = EdgesIter.EdgesIter()
         while True:
             bd, cov_q = greedy_pick.greedy_pick(edges, used_docs, covered)
@@ -366,7 +370,7 @@ if __name__ == '__main__':
         print "Corpus and models readed"
         print "Corpus: %s Queries %s " % (str(len(corpus)-len(q_corpus)), str(len(q_corpus)))
         
-        get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), counters, dic, index, index_q, constants.EDGES_FLAG in sys.argv, constants.EDGES_COMPUTED_FLAG in sys.argv)
+        get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), counters, dic, index, index_q, constants.EDGES_FLAG in sys.argv, constants.EDGES_COMPUTED_FLAG in sys.argv, constants.ONLY_COMPUTE_EDGES_FLAG in sys.argv)
     else:
         cd, cq, tfidf, dsz, qsz, ldic = make_corpus(queries, actual_q_sz)
         print "Total of %s documents" % str(dsz)

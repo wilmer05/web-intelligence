@@ -20,20 +20,18 @@ def multicore_compute_edges(tf, qtfidf, index):
     for t in threads: 
         t.join()
 
-    print "Saliendo compute edges idx"
+    print "Saliendo del multicore compute edges idx"
 
 def compute_edges(ts, qtfidf, index, start_at = 0):
 
     cc = -1
-    f2 = open(constants.EDGES_FILE, "w")
-    f2.close()
+    f2 = open(constants.EDGES_FOLDER + str(start_at) + "_" + constants.EDGES_FILE, "w")
     for q in qtfidf:
         cc += 1
         folder = (cc + start_at) / constants.EDGES_SPLIT
         file_number = (cc + start_at) % constants.EDGES_SPLIT
         fname = constants.EDGES_FOLDER + str(folder) + "/" + str(file_number)
-        f2 = open(constants.EDGES_FILE, "a")
-        f2.write(str(cc) + " " + fname + "\n")
+        f2.write(str(cc + start_at) + " " + fname + "\n")
         f = open(fname, "w")
         prt = False
         sims = index[q]
@@ -47,4 +45,4 @@ def compute_edges(ts, qtfidf, index, start_at = 0):
             f.write(str(d) + "\n")
 
         f.close()
-        f2.close()
+    f2.close()
