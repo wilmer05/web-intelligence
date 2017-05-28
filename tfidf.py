@@ -248,7 +248,7 @@ def get_doc_coverage(dd, tfidf, qsz, t, corpus):
 
     return ret
 
-def compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, q_p = 20, last_cov = 0, doc_sz_before = 0):
+def compute_greedy_and_plot(log_file, edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, q_p = 20, last_cov = 0, doc_sz_before = 0):
     px = []
     py = []
     cnt = 0
@@ -269,6 +269,10 @@ def compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz
 
         px.append((100.0* (len(used_docs) - doc_sz_before))/docs_sz)
         py.append(actual_query_p)
+        f = open(log_file, "w")
+        f.write(str(px) + "\n")
+        f.write(str(py) + "\n")
+        f.close()
         cnt += 1
         print "Percentage of query covered %s" % str(query_p)
         if query_p > q_p:
@@ -278,6 +282,7 @@ def compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz
             print "Max time reached"
             break
         print "Iteracion %s" % str(cnt)
+        print "Time in seconds elapsed %s" % str(t2-t1)
         #print "Used docs: %s" % len(covered)
     return px, py, covered 
 
@@ -314,7 +319,7 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
                 return None
 
     edges = EdgesIter.EdgesIter(threshold)
-    px, py, covered = compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
+    px, py, covered = compute_greedy_and_plot(constants.POINTS_FILE, edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
     fig = plt.figure(1)
     plt.clf()
 
@@ -325,7 +330,7 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
     fig.savefig('figures/latest.png')
 
     edges = EdgesIter.EdgesIter(th2)
-    px, py, covered = compute_greedy_and_plot(edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, 50, len(covered), len(used_docs))
+    px, py, covered = compute_greedy_and_plot('tail_' + constants.POINTS_FILE, edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, 50, len(covered), len(used_docs))
     fig = plt.figure(1)
     plt.clf()
 
