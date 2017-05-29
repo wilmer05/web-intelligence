@@ -6,7 +6,6 @@ import constants
 import os
 from log_filter import get_queries
 import geom
-import matplotlib.pyplot as plt
 import matplotlib
 import MyCorpus
 import DocIter
@@ -16,6 +15,9 @@ import graph_builder
 import EdgesIter
 import time
 
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
 
 def keys_in_word(keys, word):
     for i in keys:
@@ -251,11 +253,14 @@ def get_doc_coverage(dd, tfidf, qsz, t, corpus):
 
     return ret
 
-def compute_greedy_and_plot(log_file, edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, q_p = 20, last_cov = 0, doc_sz_before = 0):
+def compute_greedy_and_plot(log_file, edges_list, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, q_p = 20, last_cov = 0, doc_sz_before = 0):
     px = []
     py = []
     cnt = 0
     t1 = time.time()
+    edges = edges_list[0]
+    last_edges = 0
+    before_actual_query_p = 0
     while True:
         bd, cov_q = greedy_pick.greedy_pick(edges, used_docs, covered)
         if -1 == bd:
@@ -277,6 +282,11 @@ def compute_greedy_and_plot(log_file, edges, used_docs, covered, cnts, real_q_sz
         f.write(str(py) + "\n")
         f.close()
         cnt += 1
+        if actual_query_p - before_actual_query_p < constants.EPSILON and (last_edges + 1 < len(edges)):
+            print "Change of threshold for tail"
+            last_edges += 1
+            edges = edges_list[last_edges]
+        before_actual_query_p = actual_query_p
         print "Percentage of query covered %s" % str(query_p)
         if query_p > q_p:
             break
@@ -289,7 +299,7 @@ def compute_greedy_and_plot(log_file, edges, used_docs, covered, cnts, real_q_sz
         #print "Used docs: %s" % len(covered)
     return px, py, covered 
 
-def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index_q, edges_flag, computed_edges_flag, only_compute_edges_flag):
+def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, th2, cnts, dic, index, index_q, edges_flag, computed_edges_flag, only_compute_edges_flag):
     number_of_thresholds = 10
     docs_per_thr = []
     print "Computing dtfidf"
@@ -308,21 +318,21 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
     real_q_sz = len(qtfidf)
     query_sz = len(qtfidf)
     docs_sz = len(dtfidf)
-    th2 = 0.3
     if not edges_flag:
         edges = get_edges(threshold, qtfidf, index)
     else:
         if not computed_edges_flag:
             print "### Computing edges ####"
             graph_builder.multicore_compute_edges(threshold, qtfidf, index)
-            graph_builder.multicore_compute_edges(th2, qtfidf, index)
+            for t2 in th2:
+                graph_builder.multicore_compute_edges(t2, qtfidf, index)
             #graph_builder.compute_edges(threshold, qtfidf, index)
             if only_compute_edges_flag:
                 print "Edges computed, stoping script."
                 return None
 
     edges = EdgesIter.EdgesIter(threshold)
-    px, py, covered = compute_greedy_and_plot(constants.POINTS_FILE + '_' + str(threshold), edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
+    px, py, covered = compute_greedy_and_plot(constants.POINTS_FILE + '_' + str(threshold), [edges], used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
     fig = plt.figure(1)
     plt.clf()
 
@@ -332,12 +342,14 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
     plt.xlabel('Percentage of documents used over   %s' % docs_sz)
     fig.savefig('figures/latest.png')
 
-    edges = EdgesIter.EdgesIter(th2)
+    edges = []
+    for t2 in th2:
+        edges.append(EdgesIter.EdgesIter(t2))
     px, py, covered = compute_greedy_and_plot('tail_' + constants.POINTS_FILE +  '_' + str(threshold), edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, 50, len(covered), len(used_docs))
     fig = plt.figure(1)
     plt.clf()
 
-    plt.plot(px, py, '-', label='threshold %s' % th2)
+    plt.plot(px, py, '-', label='threshold %s' % th2[0])
     plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=2, mode="expand", borderaxespad=0.)
     plt.ylabel('Percentage of covered unique queries over on tail  %s' % (real_q_sz))
     plt.xlabel('Percentage of documents used over   %s' % docs_sz)
@@ -347,7 +359,6 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
 
 if __name__ == '__main__':
 
-    matplotlib.use('Agg')
     queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))
         
     if os.path.isfile(constants.CORPUS_FILE):
@@ -360,8 +371,16 @@ if __name__ == '__main__':
         index_q = similarities.Similarity.load(constants.INDEX_QUERIES_FILE)
         print "Corpus and models readed"
         print "Corpus: %s Queries %s " % (str(len(corpus)-len(q_corpus)), str(len(q_corpus)))
-        
-        get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), counters, dic, index, index_q, constants.EDGES_FLAG in sys.argv, constants.EDGES_COMPUTED_FLAG in sys.argv, constants.ONLY_COMPUTE_EDGES_FLAG in sys.argv)
+        th2 = [float(sys.argv[4])] 
+        if constants.DECREASING_FLAG in sys.argv:
+            while True:
+                tmp = th2[-1] - 0.1
+                if tmp > 0:
+                    th2.append(tmp)
+                else:
+                    break
+
+        get_dot_and_plot(corpus, q_corpus, tfidf, float(sys.argv[3]), th2, counters, dic, index, index_q, constants.EDGES_FLAG in sys.argv, constants.EDGES_COMPUTED_FLAG in sys.argv, constants.ONLY_COMPUTE_EDGES_FLAG in sys.argv)
     else:
         cd, cq, tfidf, dsz, qsz, ldic = make_corpus(queries, actual_q_sz)
         print "Total of %s documents" % str(dsz)
