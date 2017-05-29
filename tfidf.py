@@ -7,6 +7,7 @@ import os
 from log_filter import get_queries
 import geom
 import matplotlib.pyplot as plt
+import matplotlib
 import MyCorpus
 import DocIter
 import numpy as np
@@ -14,6 +15,8 @@ import greedy_pick
 import graph_builder
 import EdgesIter
 import time
+
+
 def keys_in_word(keys, word):
     for i in keys:
         if i in word:
@@ -319,7 +322,7 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
                 return None
 
     edges = EdgesIter.EdgesIter(threshold)
-    px, py, covered = compute_greedy_and_plot(constants.POINTS_FILE, edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
+    px, py, covered = compute_greedy_and_plot(constants.POINTS_FILE + '_' + str(threshold), edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz)
     fig = plt.figure(1)
     plt.clf()
 
@@ -330,7 +333,7 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
     fig.savefig('figures/latest.png')
 
     edges = EdgesIter.EdgesIter(th2)
-    px, py, covered = compute_greedy_and_plot('tail_' + constants.POINTS_FILE, edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, 50, len(covered), len(used_docs))
+    px, py, covered = compute_greedy_and_plot('tail_' + constants.POINTS_FILE +  '_' + str(threshold), edges, used_docs, covered, cnts, real_q_sz, query_sz, docs_sz, 50, len(covered), len(used_docs))
     fig = plt.figure(1)
     plt.clf()
 
@@ -343,6 +346,8 @@ def get_dot_and_plot(corpus, q_corpus, tfidf, threshold, cnts, dic, index, index
 
 
 if __name__ == '__main__':
+
+    matplotlib.use('Agg')
     queries, actual_q_sz, counters = get_queries_from(int(sys.argv[1]), int(sys.argv[2]))
         
     if os.path.isfile(constants.CORPUS_FILE):
