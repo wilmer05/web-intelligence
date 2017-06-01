@@ -282,7 +282,9 @@ def compute_greedy_and_plot(log_file, edges_list, used_docs, covered, cnts, real
         f.write(str(py) + "\n")
         f.close()
         cnt += 1
-        if actual_query_p - before_actual_query_p < constants.EPSILON and (last_edges + 1 < len(edges)):
+        if actual_query_p - before_actual_query_p < constants.EPSILON:
+            if (last_edges + 1 >= len(edges_list)):
+                break
             print "Change of threshold for tail"
             last_edges += 1
             edges = edges_list[last_edges]

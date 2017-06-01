@@ -37,6 +37,6 @@ ONLY_COMPUTE_EDGES_FLAG = '--only-compute-edges'
 POINTS_FILE = 'points.txt'
 POINTS_Y = 'y_points.txt'
 DAY = 3600 * 24
-MAXTIME_COMPUTING = 3 * DAY
+MAXTIME_COMPUTING = 1 * DAY
 DECREASING_FLAG = '--decrease-th'
 EPSILON = 0.01
